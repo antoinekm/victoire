@@ -50,7 +50,13 @@ export async function captureScreen(region?: CaptureRegion): Promise<string> {
       logger.warn('Region capture is not fully implemented, saving full screenshot');
     } else {
       // Capture full screen
-      await screenshot({ filename: filepath });
+      try {
+        await screenshot({ filename: filepath });
+      } catch (error) {
+        // Try alternative method if the first one fails
+        const imgBuffer = await screenshot({ format: 'png' });
+        await fs.writeFile(filepath, imgBuffer);
+      }
     }
     
     logger.info(`Screenshot saved to: ${filepath}`);

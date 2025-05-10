@@ -1,16 +1,16 @@
 import { openai } from '@ai-sdk/openai';
-import { generateText, streamText } from 'ai';
+import { generateText, LanguageModelV1, streamText, ToolSet } from 'ai';
 import { logger } from '../utils/logger.js';
 import { SystemPrompt } from './prompt.js';
 import { executeCommand } from '../system/commands.js';
 import { simulateKeyboard } from '../system/keyboard.js';
 import { moveMouse, clickMouse } from '../system/mouse.js';
 import { captureScreen } from '../screen/capture.js';
-import { analyzeScreenContent } from '../screen/analyze.js';
+import { getScreenshotBase64, resizeScreenshot } from '../screen/analyze.js';
 import { z } from 'zod';
 
 // Define the available tools
-const tools = {
+const tools: ToolSet = {
   executeCommand: {
     description: 'Execute a system command',
     parameters: z.object({
@@ -18,7 +18,15 @@ const tools = {
     }),
     execute: async ({ command }) => {
       logger.info(`Executing command: ${command}`);
-      return await executeCommand(command);
+      try {
+        return await executeCommand(command);
+      } catch (error) {
+        logger.error(`Error executing command: ${command}`, error);
+        return { 
+          stdout: '', 
+          stderr: `Error executing command: ${error instanceof Error ? error.message : 'Unknown error'}`
+        };
+      }
     }
   },
   
@@ -29,8 +37,16 @@ const tools = {
     }),
     execute: async ({ text }) => {
       logger.info(`Typing text: ${text}`);
-      await simulateKeyboard(text);
-      return { success: true, message: `Typed: ${text}` };
+      try {
+        await simulateKeyboard(text);
+        return { success: true, message: `Typed: ${text}` };
+      } catch (error) {
+        logger.error(`Error typing text: ${text}`, error);
+        return { 
+          success: false, 
+          message: `Error typing text: ${error instanceof Error ? error.message : 'Unknown error'}`
+        };
+      }
     }
   },
   
@@ -42,8 +58,16 @@ const tools = {
     }),
     execute: async ({ x, y }) => {
       logger.info(`Moving mouse to: ${x}, ${y}`);
-      moveMouse(x, y);
-      return { success: true, message: `Moved mouse to (${x}, ${y})` };
+      try {
+        moveMouse(x, y);
+        return { success: true, message: `Moved mouse to (${x}, ${y})` };
+      } catch (error) {
+        logger.error(`Error moving mouse to: ${x}, ${y}`, error);
+        return { 
+          success: false, 
+          message: `Error moving mouse: ${error instanceof Error ? error.message : 'Unknown error'}`
+        };
+      }
     }
   },
   
@@ -55,8 +79,16 @@ const tools = {
     }),
     execute: async ({ button, double }) => {
       logger.info(`Clicking mouse: ${button}, double: ${double}`);
-      clickMouse(button, double);
-      return { success: true, message: `Clicked ${button} button ${double ? 'twice' : 'once'}` };
+      try {
+        clickMouse(button, double);
+        return { success: true, message: `Clicked ${button} button ${double ? 'twice' : 'once'}` };
+      } catch (error) {
+        logger.error(`Error clicking mouse: ${button}, double: ${double}`, error);
+        return { 
+          success: false, 
+          message: `Error clicking mouse: ${error instanceof Error ? error.message : 'Unknown error'}`
+        };
+      }
     }
   },
   
@@ -68,22 +100,61 @@ const tools = {
         y: z.number().optional().describe('Y coordinate of the top-left corner'),
         width: z.number().optional().describe('Width of the region'),
         height: z.number().optional().describe('Height of the region')
-      }).optional().describe('Region to capture, capture full screen if not provided')
+      }).optional().describe('Region to capture, capture full screen if not provided'),
+      maxWidth: z.number().optional().default(1024).describe('Maximum width of the resized screenshot'),
+      maxHeight: z.number().optional().default(768).describe('Maximum height of the resized screenshot')
     }),
-    execute: async ({ region }) => {
-      logger.info(`Capturing screen${region ? ' with region' : ''}`);
-      const path = await captureScreen(region);
-      const analysis = await analyzeScreenContent(path);
-      return { 
-        success: true, 
-        screenshotPath: path,
-        analysis: analysis 
-      };
-    }
+    execute: async ({ region, maxWidth, maxHeight }) => {
+      logger.info(`Capturing screen${region ? ' with region' : ''} (max size: ${maxWidth}x${maxHeight})`);
+      try {
+        const imagePath = await captureScreen(region);
+        
+        // Resize the screenshot to fit within token limits
+        const resizedImagePath = await resizeScreenshot(imagePath, maxWidth, maxHeight);
+        const base64Image = getScreenshotBase64(resizedImagePath);
+        
+        logger.info(`Screenshot resized to max dimensions: ${maxWidth}x${maxHeight}`);
+        
+        return { 
+          success: true, 
+          screenshotPath: imagePath,
+          resizedScreenshotPath: resizedImagePath,
+          image: {
+            base64: base64Image,
+            mimeType: 'image/jpeg', // Using JPEG for smaller file size
+            description: `Screenshot captured at ${new Date().toISOString()}`
+          }
+        };
+      } catch (error) {
+        logger.error(`Error capturing screen${region ? ' with region' : ''}`, error);
+        return { 
+          success: false, 
+          message: `Error capturing screen: ${error instanceof Error ? error.message : 'Unknown error'}`
+        };
+      }
+    },
+    // Map to tool result content for LLM consumption:
+    experimental_toToolResultContent(result) {
+      if (!result.success || !result.image) {
+        return [{ type: 'text', text: result.message || "Screenshot capture failed" }];
+      }
+      
+      return [
+        { 
+          type: 'image', 
+          data: result.image.base64, 
+          mimeType: result.image.mimeType 
+        },
+        { 
+          type: 'text', 
+          text: "Screenshot captured successfully. Please analyze what you see in this image." 
+        }
+      ];
+    },
   }
 };
 
-let model: any;
+let model: LanguageModelV1;
 
 export async function initializeLLM() {
   try {
@@ -93,7 +164,7 @@ export async function initializeLLM() {
       throw new Error('Missing OPENAI_API_KEY in environment variables');
     }
     
-    model = openai('gpt-4o');
+    model = openai('gpt-4o'); // GPT-4o has vision capabilities
     logger.info('Language model initialized successfully');
   } catch (error) {
     logger.error('Failed to initialize language model:', error);
@@ -116,7 +187,8 @@ export async function getAssistantResponse(userInput: string): Promise<string> {
     return result.text;
   } catch (error) {
     logger.error('Error generating assistant response:', error);
-    throw error;
+    // Return a friendly error message
+    return `I encountered an error while processing your request: ${error instanceof Error ? error.message : 'Unknown error'}. The full error has been logged for further investigation.`;
   }
 }
 
@@ -135,6 +207,15 @@ export async function streamAssistantResponse(userInput: string): Promise<Readab
     return result.textStream;
   } catch (error) {
     logger.error('Error streaming assistant response:', error);
-    throw error;
+    // Create a readable stream with an error message
+    const encoder = new TextEncoder();
+    const errorMessage = `I encountered an error while processing your request: ${error instanceof Error ? error.message : 'Unknown error'}. The full error has been logged for further investigation.`;
+    
+    return new ReadableStream({
+      start(controller) {
+        controller.enqueue(encoder.encode(errorMessage));
+        controller.close();
+      }
+    });
   }
 }
