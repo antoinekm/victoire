@@ -3,6 +3,8 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
 import { logger } from '../utils/logger.js';
+// Import sharp for image resizing
+import sharp from 'sharp';
 
 const execPromise = promisify(exec);
 
@@ -44,7 +46,7 @@ export async function resizeScreenshot(
       return await resizeWithImageMagick(imagePath, maxWidth, maxHeight);
     } catch (error) {
       logger.info('ImageMagick not available, using Sharp for resizing');
-      return await resizeWithNodeJS(imagePath, maxWidth, maxHeight);
+      return await resizeWithSharp(imagePath, maxWidth, maxHeight);
     }
   } catch (error) {
     logger.error('Error resizing screenshot:', error);
@@ -73,27 +75,48 @@ async function resizeWithImageMagick(
 }
 
 /**
- * Fallback resize method using Node.js (no external dependencies)
- * This is a very basic implementation that simply returns the original image
- * In a real implementation, you would use a library like Sharp
+ * Resize image using Sharp library (Node.js native solution)
  */
-async function resizeWithNodeJS(
+async function resizeWithSharp(
   imagePath: string,
   maxWidth: number,
   maxHeight: number
 ): Promise<string> {
-  // For this implementation, we'll just create a copy of the original image
-  // In a real implementation, you would use a library like Sharp for proper resizing
   const outputPath = imagePath.replace(/\.(png|jpg|jpeg)$/, '_resized.jpg');
   
-  // Copy the file (in a real implementation, you would properly resize it)
-  const imageBuffer = readFileSync(imagePath);
-  writeFileSync(outputPath, imageBuffer);
-  
-  logger.warn('Image resizing not implemented in Node.js fallback. Using original image size.');
-  logger.info(`Image copied to: ${outputPath}`);
-  
-  return outputPath;
+  try {
+    // Read the image using sharp
+    const image = sharp(imagePath);
+    
+    // Get metadata to calculate proper dimensions
+    const metadata = await image.metadata();
+    const originalWidth = metadata.width || 1920;  // Default to 1920 if width is undefined
+    const originalHeight = metadata.height || 1080;  // Default to 1080 if height is undefined
+    
+    // Calculate new dimensions while maintaining aspect ratio
+    let newWidth = maxWidth;
+    let newHeight = Math.round((originalHeight * maxWidth) / originalWidth);
+    
+    // If height is still too large, resize based on height instead
+    if (newHeight > maxHeight) {
+      newHeight = maxHeight;
+      newWidth = Math.round((originalWidth * maxHeight) / originalHeight);
+    }
+    
+    logger.info(`Resizing from ${originalWidth}x${originalHeight} to ${newWidth}x${newHeight}`);
+    
+    // Process and save the image with proper compression
+    await image
+      .resize(newWidth, newHeight)
+      .jpeg({ quality: 70, progressive: true }) // Use more aggressive compression for LLM context
+      .toFile(outputPath);
+    
+    logger.info(`Screenshot resized with Sharp: ${outputPath}`);
+    return outputPath;
+  } catch (error) {
+    logger.error('Error resizing with Sharp:', error);
+    throw error;
+  }
 }
 
 /**

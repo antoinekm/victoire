@@ -1,11 +1,13 @@
 import { logger } from '../utils/logger.js';
 import { initializeLLM, getAssistantResponse } from './llm.js';
 import { SystemPrompt } from './prompt.js';
+import { initializeConversationManager } from './conversation.js';
 
 export async function setupAI() {
   try {
     logger.info('Setting up AI components...');
     await initializeLLM();
+    initializeConversationManager(); // Initialize conversation manager
     logger.info('AI components initialized successfully');
   } catch (error) {
     logger.error('Failed to initialize AI components:', error);

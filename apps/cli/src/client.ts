@@ -5,6 +5,9 @@ import { logger } from './utils/logger.js';
 const DEFAULT_SERVER_URL = 'http://localhost:3333';
 let socket: Socket | null = null;
 
+// Store the conversation state
+let conversationId: string | null = null;
+
 /**
  * Initializes the client connection to Pierre core
  */
@@ -19,6 +22,9 @@ export async function initializeClient(): Promise<void> {
     // Setup event listeners
     socket.on('connect', () => {
       logger.info('Connected to Pierre server');
+      // Generate a unique conversation ID
+      conversationId = `cli-session-${Date.now()}`;
+      logger.info(`Started conversation with ID: ${conversationId}`);
     });
     
     socket.on('connect_error', (error) => {
@@ -28,6 +34,7 @@ export async function initializeClient(): Promise<void> {
     
     socket.on('disconnect', () => {
       logger.info('Disconnected from Pierre server');
+      conversationId = null;
     });
     
     // Wait for the connection to be established
@@ -60,6 +67,18 @@ export async function closeClient(): Promise<void> {
     logger.info('Closing connection to Pierre server');
     socket.disconnect();
     socket = null;
+    conversationId = null;
+  }
+}
+
+/**
+ * Resets the current conversation
+ */
+export function resetConversation(): void {
+  if (socket && socket.connected) {
+    // Generate a new conversation ID
+    conversationId = `cli-session-${Date.now()}`;
+    logger.info(`Reset conversation with new ID: ${conversationId}`);
   }
 }
 
@@ -73,7 +92,18 @@ export async function sendMessage(message: string): Promise<string> {
       return;
     }
     
-    socket.emit('message', { message });
+    // If no conversation ID exists, create one
+    if (!conversationId) {
+      conversationId = `cli-session-${Date.now()}`;
+      logger.info(`Created new conversation with ID: ${conversationId}`);
+    }
+    
+    // Send the message with conversation ID to maintain state
+    socket.emit('message', { 
+      message,
+      conversationId,
+      timestamp: Date.now()
+    });
     
     socket.once('response', (data) => {
       resolve(data.response);

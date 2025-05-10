@@ -3,6 +3,7 @@ import { registerExecCommand } from './exec.js';
 import { registerCaptureCommand } from './capture.js';
 import { registerAskCommand } from './ask.js';
 import { registerStatusCommand } from './status.js';
+import { registerChatCommand } from './chat.js';
 
 /**
  * Registers all commands with the commander program
@@ -13,4 +14,5 @@ export function registerCommands(program: Command): void {
   registerCaptureCommand(program);
   registerAskCommand(program);
   registerStatusCommand(program);
+  registerChatCommand(program);
 }

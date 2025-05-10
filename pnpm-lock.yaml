@@ -90,6 +90,9 @@ importers:
       screenshot-desktop:
         specifier: ^1.15.1
         version: 1.15.1
+      sharp:
+        specifier: ^0.34.1
+        version: 0.34.1
       socket.io:
         specifier: ^4.7.4
         version: 4.8.1
@@ -4062,7 +4065,6 @@ snapshots:
     dependencies:
       color-convert: 2.0.1
       color-string: 1.9.1
-    optional: true
 
   colorspace@1.1.4:
     dependencies:
@@ -4202,8 +4204,7 @@ snapshots:
 
   detect-libc@1.0.3: {}
 
-  detect-libc@2.0.3:
-    optional: true
+  detect-libc@2.0.3: {}
 
   diff-match-patch@1.0.5: {}
 
@@ -5943,7 +5944,6 @@ snapshots:
       '@img/sharp-wasm32': 0.34.1
       '@img/sharp-win32-ia32': 0.34.1
       '@img/sharp-win32-x64': 0.34.1
-    optional: true
 
   shebang-command@2.0.0:
     dependencies:

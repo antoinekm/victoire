@@ -10,7 +10,7 @@ import { getScreenshotBase64, resizeScreenshot } from '../screen/analyze.js';
 import { z } from 'zod';
 
 // Define the available tools
-const tools: ToolSet = {
+export const tools: ToolSet = {
   executeCommand: {
     description: 'Execute a system command',
     parameters: z.object({
@@ -101,19 +101,49 @@ const tools: ToolSet = {
         width: z.number().optional().describe('Width of the region'),
         height: z.number().optional().describe('Height of the region')
       }).optional().describe('Region to capture, capture full screen if not provided'),
-      maxWidth: z.number().optional().default(1024).describe('Maximum width of the resized screenshot'),
-      maxHeight: z.number().optional().default(768).describe('Maximum height of the resized screenshot')
+      maxWidth: z.number().optional().default(800).describe('Maximum width of the resized screenshot'),
+      maxHeight: z.number().optional().default(600).describe('Maximum height of the resized screenshot'),
+      conversationId: z.string().optional().describe('Conversation ID to associate the screenshot with')
     }),
-    execute: async ({ region, maxWidth, maxHeight }) => {
+    execute: async ({ region, maxWidth, maxHeight, conversationId }, options) => {
       logger.info(`Capturing screen${region ? ' with region' : ''} (max size: ${maxWidth}x${maxHeight})`);
       try {
         const imagePath = await captureScreen(region);
         
-        // Resize the screenshot to fit within token limits
+        // Resize the screenshot to fit within token limits - using smaller defaults
         const resizedImagePath = await resizeScreenshot(imagePath, maxWidth, maxHeight);
         const base64Image = getScreenshotBase64(resizedImagePath);
         
         logger.info(`Screenshot resized to max dimensions: ${maxWidth}x${maxHeight}`);
+        
+        // If we have access to the messages, try to extract the conversation ID
+        if (!conversationId && options && options.messages && options.messages.length > 0) {
+          // Look for a message with a conversationId property
+          for (const message of options.messages) {
+            if ('conversationId' in message) {
+              conversationId = message.conversationId;
+              break;
+            }
+          }
+        }
+        
+        // Add screenshot to conversation context if possible
+        if (conversationId) {
+          logger.info(`Adding screenshot to conversation: ${conversationId}`);
+          try {
+            // Import here to avoid circular dependencies
+            const { addConversationResource } = await import('../ai/conversation.js');
+            addConversationResource(conversationId, 'screenshot', {
+              path: resizedImagePath,
+              description: `Screenshot captured at ${new Date().toISOString()}. Shows the user's screen or desktop environment.`
+            });
+          } catch (e) {
+            logger.error('Error adding screenshot to conversation:', e);
+          }
+        }
+        
+        // Create detailed description for the AI
+        const description = `This is a screenshot of the user's screen captured at ${new Date().toISOString()}. It has been resized to a maximum of ${maxWidth}x${maxHeight} pixels.`;
         
         return { 
           success: true, 
@@ -122,8 +152,10 @@ const tools: ToolSet = {
           image: {
             base64: base64Image,
             mimeType: 'image/jpeg', // Using JPEG for smaller file size
-            description: `Screenshot captured at ${new Date().toISOString()}`
-          }
+            description
+          },
+          // Include the conversation ID in the response
+          conversationId
         };
       } catch (error) {
         logger.error(`Error capturing screen${region ? ' with region' : ''}`, error);
@@ -139,6 +171,11 @@ const tools: ToolSet = {
         return [{ type: 'text', text: result.message || "Screenshot capture failed" }];
       }
       
+      // Create a detailed message about the image
+      const contextText = result.conversationId ? 
+        " I'll remember this screenshot for our conversation. You can ask me questions about what's visible in it." :
+        " You can ask me questions about what's visible in it.";
+      
       return [
         { 
           type: 'image', 
@@ -147,14 +184,14 @@ const tools: ToolSet = {
         },
         { 
           type: 'text', 
-          text: "Screenshot captured successfully. Please analyze what you see in this image." 
+          text: "Screenshot captured successfully." + contextText
         }
       ];
     },
   }
 };
 
-let model: LanguageModelV1;
+export let model: LanguageModelV1;
 
 export async function initializeLLM() {
   try {

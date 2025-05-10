@@ -6,6 +6,13 @@ import { logger } from '../utils/logger.js';
 import { processUserInput } from '../ai/index.js';
 import { streamAssistantResponse } from '../ai/llm.js';
 import { authenticate } from '../security/auth.js';
+import { 
+  initializeConversationManager,
+  processConversationMessage,
+  getOrCreateConversation,
+  addConversationResource
+} from '../ai/conversation.js';
+import { model } from '../ai/llm.js'; // Import the LLM model
 
 // Server instance
 let io: Server;
@@ -18,6 +25,9 @@ export async function startServer(port: number, host: string): Promise<void> {
   try {
     const app = express();
     server = http.createServer(app);
+    
+    // Initialize conversation manager
+    initializeConversationManager();
     
     // Set up Socket.IO with CORS configured
     io = new Server(server, {
@@ -36,14 +46,25 @@ export async function startServer(port: number, host: string): Promise<void> {
     // API endpoint for text-based communication
     app.post('/api/message', express.json(), async (req, res) => {
       try {
-        const { message } = req.body;
+        const { message, conversationId } = req.body;
         
         if (!message) {
           return res.status(400).json({ error: 'Message is required' });
         }
         
-        const response = await processUserInput(message);
-        return res.json({ response });
+        // Generate a conversation ID if not provided
+        const actualConversationId = conversationId || `api-${Date.now()}`;
+        
+        let response;
+        if (conversationId) {
+          // Use conversation-aware processing if conversation ID is provided
+          response = await processConversationMessage(model, actualConversationId, message);
+        } else {
+          // Use regular processing for one-off requests
+          response = await processUserInput(message);
+        }
+        
+        return res.json({ response, conversationId: actualConversationId });
       } catch (error) {
         logger.error('Error processing message:', error);
         return res.status(500).json({ error: 'Failed to process message' });
@@ -53,10 +74,18 @@ export async function startServer(port: number, host: string): Promise<void> {
     // API endpoint for streaming responses
     app.post('/api/stream', express.json(), async (req, res) => {
       try {
-        const { message } = req.body;
+        const { message, conversationId } = req.body;
         
         if (!message) {
           return res.status(400).json({ error: 'Message is required' });
+        }
+        
+        // Generate a conversation ID if not provided
+        const actualConversationId = conversationId || `api-stream-${Date.now()}`;
+        
+        // Process the message in the conversation context (for history)
+        if (conversationId) {
+          await processConversationMessage(model, actualConversationId, message);
         }
         
         res.setHeader('Content-Type', 'text/event-stream');
@@ -80,7 +109,7 @@ export async function startServer(port: number, host: string): Promise<void> {
               }
               
               const chunk = new TextDecoder().decode(value);
-              res.write(`data: ${JSON.stringify({ text: chunk })}\\n\\n`);
+              res.write(`data: ${JSON.stringify({ text: chunk, conversationId: actualConversationId })}\\n\\n`);
             }
           } catch (error) {
             logger.error('Error processing stream:', error);
@@ -103,11 +132,37 @@ export async function startServer(port: number, host: string): Promise<void> {
       // Handle incoming messages
       socket.on('message', async (data) => {
         try {
-          const response = await processUserInput(data.message);
-          socket.emit('response', { response });
+          const { message, conversationId, timestamp } = data;
+          const actualConversationId = conversationId || `socket-${socket.id}-${Date.now()}`;
+          
+          logger.info(`Message from client ${socket.id} (conversation: ${actualConversationId}): ${message}`);
+          
+          // Process the message in conversation context
+          const response = await processConversationMessage(model, actualConversationId, message);
+          
+          // Send response back to client
+          socket.emit('response', { 
+            response,
+            conversationId: actualConversationId,
+            timestamp: Date.now()
+          });
+          
         } catch (error) {
           logger.error('Error handling socket message:', error);
           socket.emit('error', { error: 'Failed to process message' });
+        }
+      });
+      
+      // Handle screen capture results for conversation context
+      socket.on('screenshot_captured', (data) => {
+        const { conversationId, screenshotPath, description } = data;
+        
+        if (conversationId && screenshotPath) {
+          // Add screenshot to conversation resources
+          addConversationResource(conversationId, 'screenshot', {
+            path: screenshotPath,
+            description: description || 'Screenshot captured by user'
+          });
         }
       });
       
