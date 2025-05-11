@@ -2,7 +2,7 @@ name: Pierre CLI Build and Release
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, antoinekm/cli-exe]  # Added your branch here
     tags: ["v*"]
   pull_request:
     branches: [main, master]
@@ -12,6 +12,8 @@ on:
       - 'packages/**'
       - '.github/workflows/pierre-cli.yml'
       - 'pnpm-lock.yaml'
+  # Add manual trigger for testing
+  workflow_dispatch:
 
 jobs:
   build:
@@ -96,19 +98,57 @@ jobs:
         if: ${{ matrix.installer_cmd != '' }}
 
       - name: Upload executables
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
           path: apps/cli/bin/*
           retention-days: 7
 
       - name: Upload installers
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.installer_artifact }}
           path: apps/cli/bin/installer/*
           retention-days: 7
 
+  # For branch testing, we'll create a pseudo-release to test the artifacts
+  test-release:
+    name: Create Test Release
+    needs: build
+    if: github.ref == 'refs/heads/antoinekm/cli-exe'  # Only run on your branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Display structure of downloaded files
+        run: ls -R artifacts
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release-assets
+          find artifacts -type f -name "pierre-*" -exec cp {} release-assets/ \;
+          ls -la release-assets/
+
+      - name: Create Test Release
+        id: create_test_release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release-assets/*
+          name: Pierre CLI Test Build (Branch ${{ github.ref_name }})
+          tag_name: test-${{ github.sha }}
+          draft: false
+          prerelease: true
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Keep the normal release job for tags
   release:
     name: Create Release
     needs: build
@@ -119,7 +159,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: artifacts
 

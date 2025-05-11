@@ -71,14 +71,14 @@ jobs:
           ls -la apps/cli/bin/installer/
 
       - name: Upload executables
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: pierre-linux-test-build
           path: apps/cli/bin/*
           retention-days: 2
 
       - name: Upload installers
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: pierre-linux-test-installer
           path: apps/cli/bin/installer/*
