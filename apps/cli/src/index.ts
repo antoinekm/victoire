@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import { Command } from 'commander';
 import { initializeClient, closeClient } from './client.js';
 import { registerCommands } from './commands/index.js';
-import { outro } from '@clack/prompts';
+import { intro, log, outro } from '@clack/prompts';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -19,19 +19,43 @@ const program = new Command();
 
 program
   .name(packageJson.name)
-  .description('Pierre AI Desktop Assistant CLI')
+  .description(packageJson.description)
   .version(packageJson.version);
+
+program.configureHelp({
+  formatHelp: (cmd, helper) => {
+    return '';
+  }
+});
 
 async function main() {
   try {
     await initializeClient(program);
     registerCommands(program);
-    await program.parseAsync(process.argv);
     
-    if (process.argv.length <= 2) {
-      program.help();
+    if (process.argv.length <= 2 || process.argv.includes('--help') || process.argv.includes('-h')) {
+      const commands = program.commands.map(cmd => {
+        return `  ${cmd.name()}${' '.repeat(14 - cmd.name().length)} ${cmd.description()}`;
+      }).join('\n');
+      
+      intro(`▲ ${program.name()} ${program.version()}`);
+      log.message(`${program.description()}\n
+Options:
+  -V, --version   output the version number
+  -h, --help      display help for command
+  
+Commands:
+${commands}
+
+help [command]    display help for command`);
+      outro();
+      
+      process.exit(0);
     }
+    
+    await program.parseAsync(process.argv);
   } catch (error) {
+    // Error handling
   }
 }
 

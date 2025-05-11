@@ -9,6 +9,10 @@ let conversationId: string | null = null;
 let hasInitialConnection = false;
 
 export async function initializeClient(program: Command): Promise<void> {
+  if (process.argv.length <= 2 || process.argv.includes('--help') || process.argv.includes('-h')) {
+    return Promise.resolve();
+  }
+  
   try {
     const serverUrl = process.env.PIERRE_SERVER_URL || DEFAULT_SERVER_URL;
     
