@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 import dotenv from 'dotenv';
 import { Command } from 'commander';
-import chalk from 'chalk';
 import { initializeClient, closeClient } from './client.js';
 import { registerCommands } from './commands/index.js';
-import { logger } from './utils/logger.js';
+import { cancel, intro, log, outro } from '@clack/prompts';
 
 // Load environment variables
 dotenv.config();
@@ -14,16 +13,14 @@ const program = new Command();
 
 // Setup program metadata
 program
-  .name('pierre')
+  .name('@pierre/cli')
   .description('Pierre AI Desktop Assistant CLI')
   .version('0.1.0');
 
 async function main() {
   try {
-    logger.info('Starting Pierre CLI...');
-    
     // Initialize client connection to Pierre core
-    await initializeClient();
+    await initializeClient(program);
     
     // Register all commands
     registerCommands(program);
@@ -37,28 +34,24 @@ async function main() {
     }
     
   } catch (error) {
-    logger.error('Error starting Pierre CLI:', error);
-    console.error(chalk.red('Failed to start Pierre CLI. See logs for details.'));
+    cancel(`Failed to start @pierre/cli: ${error instanceof Error ? error.message : 'Unknown error'}`);
     process.exit(1);
   }
 }
 
-// Run the CLI
 main().catch(async (err) => {
-  logger.error('Unhandled error in main:', err);
+  log.error(`Unhandled error: ${err instanceof Error ? err.message : 'Unknown error'}`);
   await closeClient();
   process.exit(1);
 });
 
-// Handle shutdown gracefully
 process.on('SIGINT', async () => {
-  logger.info('Shutting down Pierre CLI...');
   await closeClient();
   process.exit(0);
 });
 
 process.on('uncaughtException', async (err) => {
-  logger.error('Uncaught exception:', err);
+  log.error(`Uncaught exception: ${err.message}`);
   await closeClient();
   process.exit(1);
 });

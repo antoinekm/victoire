@@ -1,43 +1,42 @@
 import { io, Socket } from 'socket.io-client';
 import { logger } from './utils/logger.js';
+import { cancel, intro, log, outro, spinner } from '@clack/prompts';
+import { Command } from 'commander';
+import chalk from 'chalk';
 
-// Client connection details
 const DEFAULT_SERVER_URL = 'http://localhost:3333';
 let socket: Socket | null = null;
 
-// Store the conversation state
 let conversationId: string | null = null;
 
-/**
- * Initializes the client connection to Pierre core
- */
-export async function initializeClient(): Promise<void> {
+export async function initializeClient(program: Command): Promise<void> {
   try {
     const serverUrl = process.env.PIERRE_SERVER_URL || DEFAULT_SERVER_URL;
-    logger.info(`Connecting to Pierre server at ${serverUrl}`);
     
-    // Connect to the Pierre server
     socket = io(serverUrl);
+
+    const introMessage = chalk.bold(`▲ ${program.name()} ${program.version()}`);
     
-    // Setup event listeners
     socket.on('connect', () => {
-      logger.info('Connected to Pierre server');
-      // Generate a unique conversation ID
       conversationId = `cli-session-${Date.now()}`;
-      logger.info(`Started conversation with ID: ${conversationId}`);
+
+      intro(introMessage);
+      log.message(`- Server:  ${serverUrl}
+- Session: ${conversationId}`);
     });
     
     socket.on('connect_error', (error) => {
-      logger.error('Connection error:', error);
+      intro(introMessage);
+      log.error(`Failed to connect to server: ${error.message}`);
+      outro('Please check if the server is running and try again.');
       throw error;
     });
     
     socket.on('disconnect', () => {
-      logger.info('Disconnected from Pierre server');
+      outro('See you next time!');
       conversationId = null;
     });
     
-    // Wait for the connection to be established
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         reject(new Error('Connection timeout'));
@@ -54,7 +53,7 @@ export async function initializeClient(): Promise<void> {
       });
     });
   } catch (error) {
-    logger.error('Failed to initialize client:', error);
+    log.error(`Failed to initialize client: ${error instanceof Error ? error.message : 'Unknown error'}`);
     throw error;
   }
 }
@@ -64,7 +63,6 @@ export async function initializeClient(): Promise<void> {
  */
 export async function closeClient(): Promise<void> {
   if (socket) {
-    logger.info('Closing connection to Pierre server');
     socket.disconnect();
     socket = null;
     conversationId = null;

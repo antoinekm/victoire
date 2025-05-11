@@ -3,46 +3,44 @@ import chalk from 'chalk';
 import inquirer from 'inquirer';
 import { sendMessage } from '../client.js';
 import { logger } from '../utils/logger.js';
+import { cancel, isCancel, log, outro, spinner, text } from '@clack/prompts';
 
 export function registerChatCommand(program: Command): void {
   program
     .command('chat')
     .description('Start an interactive chat with Pierre')
     .action(async () => {
-      console.log(chalk.blue('Starting interactive chat with Pierre. Type "exit" to quit.'));
-      console.log(chalk.blue('─────────────────────────────────────────────────────────'));
+      log.info(chalk.blue(`Type "exit" to quit`));
       
       let chatActive = true;
       let chatHistory = '';
       
       while (chatActive) {
         try {
-          // Get user input
-          const { message } = await inquirer.prompt([
-            {
-              type: 'input',
-              name: 'message',
-              message: chalk.green('You:'),
-              validate: (input) => input.trim().length > 0 || 'Please enter a message',
-            },
-          ]);
+          const message = await text({
+            message: chalk.magenta('You:'),
+            placeholder: 'Type your message here...',
+          });
+
+          if (isCancel(message)) {
+            cancel('Chat session cancelled.');
+            process.exit(0);
+          }
           
           // Check for exit command
-          if (message.toLowerCase() === 'exit') {
-            console.log(chalk.blue('Ending chat session.'));
+          if (message.toString().toLowerCase() === 'exit') {
+            outro(chalk.blue('Ending chat session.'));
             chatActive = false;
-            break;
+            process.exit(0);
           }
           
           // Add to chat history
-          chatHistory += `\nUser: ${message}`;
+          chatHistory += `\nUser: ${message.toString()}`;
           
           // Send message to Pierre
-          console.log(chalk.yellow('Pierre is thinking...'));
-          const response = await sendMessage(message);
+          const response = await sendMessage(message.toString());
           
-          // Display response
-          console.log(chalk.cyan('Pierre:'), response);
+          log.success(`${chalk.blue('Pierre:')}\n${response}`);
           
           // Add to chat history
           chatHistory += `\nPierre: ${response}`;
