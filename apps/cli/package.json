@@ -3,12 +3,16 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
+  "bin": {
+    "pierre": "./dist/index.js"
+  },
   "scripts": {
     "dev": "tsx src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "lint": "eslint . --max-warnings 0",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "package": "node scripts/package.js"
   },
   "dependencies": {
     "@clack/prompts": "^0.10.1",
@@ -27,7 +31,17 @@
     "@types/inquirer": "^9.0.7",
     "@types/node": "^22.15.3",
     "eslint": "^9.26.0",
+    "pkg": "^5.8.1",
     "tsx": "^4.7.1",
     "typescript": "5.8.2"
+  },
+  "pkg": {
+    "scripts": "dist/**/*.js",
+    "targets": [
+      "node18-win-x64",
+      "node18-macos-x64",
+      "node18-linux-x64"
+    ],
+    "outputPath": "bin"
   }
 }

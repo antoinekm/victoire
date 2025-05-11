@@ -1,0 +1,145 @@
+name: Pierre CLI Build and Release
+
+on:
+  push:
+    branches: [main, master]
+    tags: ["v*"]
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'apps/cli/**'
+      - 'apps/core/**'
+      - 'packages/**'
+      - '.github/workflows/pierre-cli.yml'
+      - 'pnpm-lock.yaml'
+
+jobs:
+  build:
+    name: Build CLI for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            pkg_cmd: node scripts/package.js
+            installer_cmd: bash scripts/linux-installer.sh
+            artifact_name: pierre-linux-build
+            installer_artifact: pierre-linux-installer
+          - os: macos-latest
+            pkg_cmd: node scripts/package.js
+            installer_cmd: bash scripts/macos-installer.sh
+            artifact_name: pierre-mac-build
+            installer_artifact: pierre-mac-installer
+          - os: windows-latest
+            pkg_cmd: node scripts/package.js
+            installer_cmd: iscc scripts/windows-installer.iss
+            artifact_name: pierre-windows-build
+            installer_artifact: pierre-windows-installer
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+          run_install: false
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install
+
+      # Install platform-specific dependencies
+      - name: Install Linux packaging dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ruby ruby-dev rubygems build-essential rpm
+          sudo gem install fpm
+
+      - name: Install Windows packaging dependencies
+        if: matrix.os == 'windows-latest'
+        run: |
+          choco install innosetup -y
+
+      - name: Build packages
+        run: pnpm build
+
+      - name: Package CLI executables
+        working-directory: apps/cli
+        run: ${{ matrix.pkg_cmd }}
+
+      - name: Run installer script
+        working-directory: apps/cli
+        run: ${{ matrix.installer_cmd }}
+        if: ${{ matrix.installer_cmd != '' }}
+
+      - name: Upload executables
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: apps/cli/bin/*
+          retention-days: 7
+
+      - name: Upload installers
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.installer_artifact }}
+          path: apps/cli/bin/installer/*
+          retention-days: 7
+
+  release:
+    name: Create Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+
+      - name: Display structure of downloaded files
+        run: ls -R artifacts
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release-assets
+          find artifacts -type f -name "pierre-*" -exec cp {} release-assets/ \;
+          ls -la release-assets/
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release-assets/*
+          name: Pierre CLI ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

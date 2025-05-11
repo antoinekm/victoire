@@ -1,0 +1,85 @@
+name: Test CLI Build
+
+on:
+  push:
+    branches: [antoinekm/cli-exe]
+    paths:
+      - 'apps/cli/**'
+      - 'apps/core/**'
+      - '.github/workflows/test-branch.yml'
+  workflow_dispatch:  # Manual trigger for testing
+
+jobs:
+  quick-test:
+    name: Quick Test Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+          run_install: false
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Install Linux packaging dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ruby ruby-dev rubygems build-essential rpm
+          sudo gem install fpm
+
+      - name: Build packages
+        run: pnpm build
+
+      - name: Package CLI executables
+        working-directory: apps/cli
+        run: node scripts/package.js
+
+      - name: Run installer script
+        working-directory: apps/cli
+        run: bash scripts/linux-installer.sh
+
+      - name: List generated files
+        run: |
+          echo "Executables:"
+          ls -la apps/cli/bin/
+          echo ""
+          echo "Installers:"
+          ls -la apps/cli/bin/installer/
+
+      - name: Upload executables
+        uses: actions/upload-artifact@v3
+        with:
+          name: pierre-linux-test-build
+          path: apps/cli/bin/*
+          retention-days: 2
+
+      - name: Upload installers
+        uses: actions/upload-artifact@v3
+        with:
+          name: pierre-linux-test-installer
+          path: apps/cli/bin/installer/*
+          retention-days: 2
