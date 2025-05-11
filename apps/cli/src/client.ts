@@ -1,4 +1,3 @@
-// apps/cli/src/client.ts
 import { io, Socket } from 'socket.io-client';
 import { intro, log, outro } from '@clack/prompts';
 import { Command } from 'commander';
@@ -87,16 +86,18 @@ export async function closeClient(): Promise<void> {
   }
 }
 
-export async function sendMessage(message: string): Promise<string> {
+export async function sendMessage(message: string, convId: string | null = null): Promise<{text: string, conversationId: string}> {
   return new Promise((resolve, reject) => {
     if (!socket || !socket.connected) {
       reject(new Error('Not connected to Pierre server'));
       return;
     }
     
-    if (!conversationId) {
+    if (!conversationId && !convId) {
       conversationId = `cli-session-${Date.now()}`;
       log.info(`Created new conversation with ID: ${conversationId}`);
+    } else if (convId) {
+      conversationId = convId;
     }
     
     socket.emit('message', { 
@@ -106,7 +107,10 @@ export async function sendMessage(message: string): Promise<string> {
     });
     
     socket.once('response', (data) => {
-      resolve(data.response);
+      resolve({
+        text: data.response,
+        conversationId: data.conversationId
+      });
     });
     
     socket.once('error', (data) => {

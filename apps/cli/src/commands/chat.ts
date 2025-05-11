@@ -12,6 +12,7 @@ export function registerChatCommand(program: Command): void {
       log.info(chalk.blue(`Type "exit" to quit`));
       
       let chatActive = true;
+      let conversationId = null;
       
       while (chatActive) {
         try {
@@ -31,9 +32,10 @@ export function registerChatCommand(program: Command): void {
             process.exit(0);
           }
           
-          const response = await sendMessage(message.toString());
+          const response = await sendMessage(message.toString(), conversationId);
+          conversationId = response.conversationId;
           
-          log.success(`${chalk.blue('Pierre:')}\n${response}`);
+          log.success(`${chalk.blue('Pierre:')}\n${response.text}`);
         } catch (error) {
           log.error(`Error in chat: ${error instanceof Error ? error.message : 'Unknown error'}`);
           

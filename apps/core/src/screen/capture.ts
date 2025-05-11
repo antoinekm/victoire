@@ -28,14 +28,15 @@ async function ensureScreenshotsDir(): Promise<string> {
 /**
  * Captures the screen or a specific region of it
  * @param region Optional region to capture
+ * @param outputPath Optional specific path to save the screenshot
  * @returns Path to the saved screenshot
  */
-export async function captureScreen(region?: CaptureRegion): Promise<string> {
+export async function captureScreen(region?: CaptureRegion, outputPath?: string): Promise<string> {
   try {
     const screenshotsDir = await ensureScreenshotsDir();
     const timestamp = new Date().toISOString().replace(/:/g, '-');
-    const filename = `screenshot-${timestamp}.png`;
-    const filepath = path.join(screenshotsDir, filename);
+    const filename = outputPath ? path.basename(outputPath) : `screenshot-${timestamp}.png`;
+    const filepath = outputPath || path.join(screenshotsDir, filename);
     
     logger.info(`Capturing screen${region ? ' with region' : ''}`);
     
