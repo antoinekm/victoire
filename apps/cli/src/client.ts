@@ -1,15 +1,21 @@
+// apps/cli/src/client.ts
 import { io, Socket } from 'socket.io-client';
 import { intro, log, outro } from '@clack/prompts';
 import { Command } from 'commander';
 import chalk from 'chalk';
 
-const DEFAULT_SERVER_URL = 'http://localhost:3333';
+export const DEFAULT_SERVER_URL = 'http://localhost:3333';
 let socket: Socket | null = null;
 let conversationId: string | null = null;
 let hasInitialConnection = false;
 
 export async function initializeClient(program: Command): Promise<void> {
-  if (process.argv.length <= 2 || process.argv.includes('--help') || process.argv.includes('-h')) {
+  // Don't initialize socket connection for help/version commands or when no command is provided
+  if (process.argv.length <= 2 || 
+      process.argv.includes('--help') || 
+      process.argv.includes('-h') ||
+      process.argv.includes('--version') ||
+      process.argv.includes('-V')) {
     return Promise.resolve();
   }
   

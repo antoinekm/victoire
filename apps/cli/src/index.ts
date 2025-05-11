@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 import dotenv from 'dotenv';
 import { Command } from 'commander';
-import { initializeClient, closeClient } from './client.js';
+import { initializeClient, closeClient, DEFAULT_SERVER_URL } from './client.js';
 import { registerCommands } from './commands/index.js';
 import { intro, log, outro } from '@clack/prompts';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import os from 'os';
 
 dotenv.config();
 
@@ -15,11 +16,30 @@ const __dirname = path.dirname(__filename);
 const packageJsonPath = path.join(__dirname, '..', 'package.json');
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
 
+if (process.argv.includes('--version') || process.argv.includes('-V') || process.argv.includes('-v')) {
+  const version = packageJson.version;
+  const nodeVersion = process.version;
+  const platform = `${os.platform()} ${os.release()} (${os.arch()})`;
+  const memory = `${Math.round(os.totalmem() / (1024 * 1024 * 1024))} GB`;
+  const cpuInfo = os.cpus()[0];
+  const serverUrl = process.env.PIERRE_SERVER_URL || DEFAULT_SERVER_URL;
+
+  intro(`▲ ${packageJson.name}`);
+  log.message(`Version:    ${version}
+Node:       ${nodeVersion}
+Platform:   ${platform}
+CPU:        ${cpuInfo?.model.trim()} (${os.cpus().length} cores)
+Memory:     ${memory}
+Server URL: ${serverUrl}`);
+  outro();
+  process.exit(0);
+}
+
 const program = new Command();
 
 program
   .name(packageJson.name)
-  .description(packageJson.description)
+  .description('Pierre AI Desktop Assistant CLI')
   .version(packageJson.version);
 
 program.configureHelp({
@@ -41,7 +61,7 @@ async function main() {
       intro(`▲ ${program.name()} ${program.version()}`);
       log.message(`${program.description()}\n
 Options:
-  -V, --version   output the version number
+  -v, --version   output the version number
   -h, --help      display help for command
   
 Commands:
