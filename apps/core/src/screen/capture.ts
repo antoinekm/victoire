@@ -67,3 +67,32 @@ export async function captureScreen(region?: CaptureRegion, outputPath?: string)
     throw error;
   }
 }
+
+export async function clearScreenshotsDir(): Promise<number> {
+  try {
+    const screenshotsDir = path.join(process.cwd(), 'screenshots');
+    
+    // Check if directory exists before trying to read it
+    try {
+      await fs.access(screenshotsDir);
+    } catch {
+      // Directory doesn't exist yet, nothing to clear
+      return 0;
+    }
+    
+    // Read all files in the directory
+    const files = await fs.readdir(screenshotsDir);
+    
+    // Delete each file
+    for (const file of files) {
+      const filePath = path.join(screenshotsDir, file);
+      await fs.unlink(filePath);
+    }
+    
+    logger.info(`Cleared ${files.length} screenshots from ${screenshotsDir}`);
+    return files.length;
+  } catch (error) {
+    logger.error('Error clearing screenshots directory:', error);
+    throw error;
+  }
+}
