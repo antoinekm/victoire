@@ -159,12 +159,18 @@ export async function processConversationMessage(
     if (conversation.resources.screenshots && conversation.resources.screenshots.length > 0) {
       // Just mention the most recent screenshot
       const latestScreenshot = conversation.resources.screenshots[conversation.resources.screenshots.length - 1];
-      contextPrompt += `Note: The user has previously shared a screenshot at ${new Date(latestScreenshot.timestamp).toISOString()}. `;
-      contextPrompt += `You have access to this screenshot. When the user asks about what's on the screen, they're referring to this captured screenshot. `;
-      if (latestScreenshot.description) {
-        contextPrompt += `The screenshot shows: ${latestScreenshot.description}. `;
+      
+      // Fix: Add null check for latestScreenshot
+      if (latestScreenshot) {
+        contextPrompt += `Note: The user has previously shared a screenshot at ${new Date(latestScreenshot.timestamp).toISOString()}. `;
+        contextPrompt += `You have access to this screenshot. When the user asks about what's on the screen, they're referring to this captured screenshot. `;
+        
+        if (latestScreenshot.description) {
+          contextPrompt += `The screenshot shows: ${latestScreenshot.description}. `;
+        }
+        
+        contextPrompt += '\n\n';
       }
-      contextPrompt += '\n\n';
     }
     
     // Add the most recent user message
