@@ -24,7 +24,7 @@ export async function initializeClient(program: Command): Promise<void> {
     
     socket = io(serverUrl);
 
-    const introMessage = chalk.bold(`▲ ${program.name()} ${program.version()}`);
+    const introMessage = chalk.bold(`⬢ ${program.name()} ${program.version()}`);
     
     socket.on('connect', () => {
       conversationId = `cli-session-${Date.now()}`;

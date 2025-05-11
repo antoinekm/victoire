@@ -24,7 +24,7 @@ if (process.argv.includes('--version') || process.argv.includes('-V') || process
   const cpuInfo = os.cpus()[0];
   const serverUrl = process.env.PIERRE_SERVER_URL || DEFAULT_SERVER_URL;
 
-  intro(`▲ ${packageJson.name}`);
+  intro(`⬢ ${packageJson.name}`);
   log.message(`Version:    ${version}
 Node:       ${nodeVersion}
 Platform:   ${platform}
@@ -58,7 +58,7 @@ async function main() {
         return `  ${cmd.name()}${' '.repeat(14 - cmd.name().length)} ${cmd.description()}`;
       }).join('\n');
       
-      intro(`▲ ${program.name()} ${program.version()}`);
+      intro(`⬢ ${program.name()} ${program.version()}`);
       log.message(`${program.description()}\n
 Options:
   -v, --version   output the version number
