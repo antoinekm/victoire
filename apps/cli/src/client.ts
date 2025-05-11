@@ -1,13 +1,12 @@
 import { io, Socket } from 'socket.io-client';
-import { logger } from './utils/logger.js';
-import { cancel, intro, log, outro, spinner } from '@clack/prompts';
+import { intro, log, outro } from '@clack/prompts';
 import { Command } from 'commander';
 import chalk from 'chalk';
 
 const DEFAULT_SERVER_URL = 'http://localhost:3333';
 let socket: Socket | null = null;
-
 let conversationId: string | null = null;
+let hasInitialConnection = false;
 
 export async function initializeClient(program: Command): Promise<void> {
   try {
@@ -23,17 +22,29 @@ export async function initializeClient(program: Command): Promise<void> {
       intro(introMessage);
       log.message(`- Server:  ${serverUrl}
 - Session: ${conversationId}`);
+      
+      hasInitialConnection = true;
     });
     
     socket.on('connect_error', (error) => {
-      intro(introMessage);
+      if (!hasInitialConnection) {
+        intro(introMessage);
+      }
+      
       log.error(`Failed to connect to server: ${error.message}`);
       outro('Please check if the server is running and try again.');
-      throw error;
+      process.exit(1);
     });
     
-    socket.on('disconnect', () => {
-      outro('See you next time!');
+    socket.on('disconnect', (reason) => {
+      if (reason === 'io server disconnect' || reason === 'io client disconnect') {
+        outro('See you next time!');
+      } else {
+        log.error(`Connection lost: ${reason}`);
+        outro('Please check if the server is still running and try again.');
+        process.exit(1);
+      }
+      
       conversationId = null;
     });
     
@@ -58,9 +69,6 @@ export async function initializeClient(program: Command): Promise<void> {
   }
 }
 
-/**
- * Closes the client connection
- */
 export async function closeClient(): Promise<void> {
   if (socket) {
     socket.disconnect();
@@ -69,20 +77,6 @@ export async function closeClient(): Promise<void> {
   }
 }
 
-/**
- * Resets the current conversation
- */
-export function resetConversation(): void {
-  if (socket && socket.connected) {
-    // Generate a new conversation ID
-    conversationId = `cli-session-${Date.now()}`;
-    logger.info(`Reset conversation with new ID: ${conversationId}`);
-  }
-}
-
-/**
- * Sends a message to the Pierre server and returns the response
- */
 export async function sendMessage(message: string): Promise<string> {
   return new Promise((resolve, reject) => {
     if (!socket || !socket.connected) {
@@ -90,13 +84,11 @@ export async function sendMessage(message: string): Promise<string> {
       return;
     }
     
-    // If no conversation ID exists, create one
     if (!conversationId) {
       conversationId = `cli-session-${Date.now()}`;
-      logger.info(`Created new conversation with ID: ${conversationId}`);
+      log.info(`Created new conversation with ID: ${conversationId}`);
     }
     
-    // Send the message with conversation ID to maintain state
     socket.emit('message', { 
       message,
       conversationId,
@@ -111,7 +103,6 @@ export async function sendMessage(message: string): Promise<string> {
       reject(new Error(data.error || 'Unknown error'));
     });
     
-    // Set a timeout in case the server doesn't respond
     setTimeout(() => {
       reject(new Error('Response timeout'));
     }, 30000);

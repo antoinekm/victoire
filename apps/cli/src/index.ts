@@ -3,55 +3,44 @@ import dotenv from 'dotenv';
 import { Command } from 'commander';
 import { initializeClient, closeClient } from './client.js';
 import { registerCommands } from './commands/index.js';
-import { cancel, intro, log, outro } from '@clack/prompts';
+import { outro } from '@clack/prompts';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// Load environment variables
 dotenv.config();
 
-// Create the command program
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const packageJsonPath = path.join(__dirname, '..', 'package.json');
+const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+
 const program = new Command();
 
-// Setup program metadata
 program
-  .name('@pierre/cli')
+  .name(packageJson.name)
   .description('Pierre AI Desktop Assistant CLI')
-  .version('0.1.0');
+  .version(packageJson.version);
 
 async function main() {
   try {
-    // Initialize client connection to Pierre core
     await initializeClient(program);
-    
-    // Register all commands
     registerCommands(program);
-    
-    // Parse command line arguments
     await program.parseAsync(process.argv);
     
-    // If no command was provided, show help
     if (process.argv.length <= 2) {
       program.help();
     }
-    
   } catch (error) {
-    cancel(`Failed to start @pierre/cli: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    process.exit(1);
   }
 }
 
-main().catch(async (err) => {
-  log.error(`Unhandled error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+main().catch(async () => {
   await closeClient();
-  process.exit(1);
 });
 
 process.on('SIGINT', async () => {
+  outro('Chat session cancelled.');
   await closeClient();
   process.exit(0);
-});
-
-process.on('uncaughtException', async (err) => {
-  log.error(`Uncaught exception: ${err.message}`);
-  await closeClient();
-  process.exit(1);
 });
