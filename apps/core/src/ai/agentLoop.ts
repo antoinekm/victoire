@@ -35,11 +35,11 @@ export async function executeAgentLoop(
     let currentStep = 0;
     let toolResults: ToolCallResult[] = [];
     let finalText = '';
+    const originalUserInput = userInput;
     
     while (currentStep < maxSteps) {
       logger.info(`Agent loop step ${currentStep + 1} of ${maxSteps}`);
       
-      // Create properly typed messages for the AI
       const messages = [
         {
           role: 'user' as const,
@@ -57,8 +57,8 @@ export async function executeAgentLoop(
           messages,
           tools: computerTools,
           maxTokens: 1500,
-          temperature: 0.7,
-          maxSteps: 1 // Start with 1 to handle one tool call at a time
+          temperature: 0.3,
+          maxSteps: 1
         });
         
         finalText = result.text;
@@ -69,6 +69,8 @@ export async function executeAgentLoop(
         }
         
         if (result.toolCalls && result.toolCalls.length > 0) {
+          let allToolsExecuted = true;
+          
           for (const toolCall of result.toolCalls) {
             logger.info(`Tool call detected: ${toolCall.toolName}`);
             
@@ -80,7 +82,6 @@ export async function executeAgentLoop(
             const args = toolCall.args;
             
             try {
-              // Execute the tool
               const toolResult = await executeToolCall(toolName, args, computerTools);
               logger.info(`Tool execution result: ${JSON.stringify(toolResult).substring(0, 100)}...`);
               
@@ -94,37 +95,71 @@ export async function executeAgentLoop(
                 result: toolResult
               });
               
-              // Take a new screenshot after each tool call to update the visual context
               logger.info('Capturing post-action screenshot');
               const newScreenshotInfo = await captureAutomaticScreenshot();
               screenshotBuffer = fs.readFileSync(newScreenshotInfo.resizedScreenshotPath);
               
-              // Update user input to include the tool result and tell the AI to observe what happened
-              userInput = `I performed the action you requested using the ${toolName} tool. The result was: ${JSON.stringify(toolResult)}. Look at the updated screenshot carefully to see what happened. What should I do next based on what you can see in the screenshot?`;
-              logger.info(`Updated prompt for next step: ${userInput.substring(0, 100)}...`);
             } catch (toolError) {
               logger.error(`Error executing tool ${toolName}:`, toolError);
-              userInput = `There was an error executing the ${toolName} tool: ${toolError instanceof Error ? toolError.message : 'Unknown error'}. Please suggest a different approach based on what you can see in the screenshot.`;
+              allToolsExecuted = false;
+              
+              userInput = `There was an error executing the ${toolName} tool: ${toolError instanceof Error ? toolError.message : 'Unknown error'}. 
+
+Original request: "${originalUserInput}"
+
+Please analyze the current screenshot and either:
+1. Try a different approach to accomplish the original goal
+2. If the goal appears to be already accomplished, confirm completion
+3. If the goal cannot be accomplished, explain why
+
+Look carefully at what's visible on the screen and determine the best next action.`;
+              break;
             }
+          }
+          
+          if (allToolsExecuted) {
+            userInput = `I have executed the requested actions. 
+
+Original request: "${originalUserInput}"
+
+Please analyze the current screenshot carefully and determine:
+1. Has the original goal been accomplished? If so, confirm completion.
+2. If not, what is the next specific action needed to accomplish the goal?
+3. Are there any obstacles or issues that need to be addressed?
+
+Look at what's currently visible on the screen and either complete the task or take the next necessary action.`;
           }
           
           currentStep++;
           continue;
+        } else {
+          if (currentStep === 0) {
+            logger.info('No tool calls generated on first step, task may be informational only');
+          } else {
+            logger.info('No more tool calls generated, task appears complete');
+          }
+          break;
         }
       } catch (generationError) {
         logger.error('Error in text generation:', generationError);
-        // If there's an error during generation, we'll continue but with a modified prompt
-        userInput = `There was an error processing your request: ${generationError instanceof Error ? generationError.message : 'Unknown error'}. Let's try a different approach based on what you can see in the screenshot.`;
         
-        // Take a new screenshot to ensure we have the latest visual context
+        userInput = `There was an error processing the request: ${generationError instanceof Error ? generationError.message : 'Unknown error'}. 
+
+Original request: "${originalUserInput}"
+
+Please analyze the current screenshot and try a different approach to accomplish the original goal, or explain why it cannot be accomplished.`;
+        
         const newScreenshotInfo = await captureAutomaticScreenshot();
         screenshotBuffer = fs.readFileSync(newScreenshotInfo.resizedScreenshotPath);
         
         currentStep++;
         continue;
       }
-      
-      break;
+    }
+    
+    if (currentStep >= maxSteps) {
+      logger.warn(`Agent loop reached maximum steps (${maxSteps}), stopping execution`);
+      finalText += `\n\n[Note: Reached maximum number of steps (${maxSteps}). The task may require manual completion or a different approach.]`;
     }
     
     if (callbacks.onComplete) {
@@ -156,11 +191,11 @@ export async function streamAgentLoop(
     let toolResults: ToolCallResult[] = [];
     let finalText = '';
     let combinedText = '';
+    const originalUserInput = userInput;
     
     while (currentStep < maxSteps) {
       logger.info(`Streaming agent loop step ${currentStep + 1} of ${maxSteps}`);
       
-      // Create properly typed messages for the AI
       const messages = [
         {
           role: 'user' as const,
@@ -172,9 +207,8 @@ export async function streamAgentLoop(
       ];
       
       try {
-        // First, always trigger the onText callback with a processing message
-        if (callbacks.onText) {
-          callbacks.onText("I'm analyzing your request and the current screen...");
+        if (currentStep === 0 && callbacks.onText) {
+          callbacks.onText("I'm analyzing your request and the current screen...\n\n");
         }
         
         const result = await streamText({
@@ -183,17 +217,16 @@ export async function streamAgentLoop(
           messages,
           tools: computerTools,
           maxTokens: 1500,
-          temperature: 0.7,
-          maxSteps: 1, // Handle one tool at a time for better debugging
+          temperature: 0.3,
+          maxSteps: 1,
           onError: (error) => {
             logger.error('Stream error:', error);
             if (callbacks.onText) {
-              callbacks.onText(`\nEncountered an error: ${error.error.message}`);
+              callbacks.onText(`\nEncountered an error: ${error.error.message}\n`);
             }
           }
         });
         
-        // Collect streaming text
         combinedText = '';
         for await (const chunk of result.textStream) {
           combinedText += chunk;
@@ -205,11 +238,12 @@ export async function streamAgentLoop(
         finalText = combinedText || await result.text;
         logger.info(`Generated text: ${finalText.substring(0, 100)}...`);
         
-        // Get the toolCalls that were generated
         const toolCallsArray = await result.toolCalls;
         logger.info(`Tool calls detected: ${toolCallsArray.length}`);
         
         if (toolCallsArray.length > 0) {
+          let allToolsExecuted = true;
+          
           for (const toolCall of toolCallsArray) {
             logger.info(`Processing tool call: ${toolCall.toolName}`);
             
@@ -221,7 +255,6 @@ export async function streamAgentLoop(
             const args = toolCall.args;
             
             try {
-              // Execute the tool
               const toolResult = await executeToolCall(toolName, args, computerTools);
               logger.info(`Tool execution result: ${JSON.stringify(toolResult).substring(0, 100)}...`);
               
@@ -235,43 +268,81 @@ export async function streamAgentLoop(
                 result: toolResult
               });
               
-              // Take a new screenshot after each tool call
               logger.info('Capturing post-action screenshot');
               const newScreenshotInfo = await captureAutomaticScreenshot();
               screenshotBuffer = fs.readFileSync(newScreenshotInfo.resizedScreenshotPath);
               
-              // Update user input for the next step
-              userInput = `I performed the action you requested using the ${toolName} tool. The result was: ${JSON.stringify(toolResult)}. Look at the updated screenshot carefully to see what happened. What should I do next based on what you can see in the screenshot?`;
-              logger.info(`Updated prompt for next step: ${userInput.substring(0, 100)}...`);
             } catch (toolError) {
               logger.error(`Error executing tool ${toolName}:`, toolError);
+              allToolsExecuted = false;
+              
               if (callbacks.onText) {
-                callbacks.onText(`\nError executing tool ${toolName}: ${toolError instanceof Error ? toolError.message : 'Unknown error'}`);
+                callbacks.onText(`\n\nError executing tool ${toolName}: ${toolError instanceof Error ? toolError.message : 'Unknown error'}\n`);
               }
               
-              userInput = `There was an error executing the ${toolName} tool: ${toolError instanceof Error ? toolError.message : 'Unknown error'}. Please suggest a different approach based on what you can see in the screenshot.`;
+              userInput = `There was an error executing the ${toolName} tool: ${toolError instanceof Error ? toolError.message : 'Unknown error'}. 
+
+Original request: "${originalUserInput}"
+
+Please analyze the current screenshot and either:
+1. Try a different approach to accomplish the original goal
+2. If the goal appears to be already accomplished, confirm completion
+3. If the goal cannot be accomplished, explain why
+
+Look carefully at what's visible on the screen and determine the best next action.`;
+              break;
             }
+          }
+          
+          if (allToolsExecuted) {
+            if (callbacks.onText) {
+              callbacks.onText("\n\nAnalyzing the updated screen to determine next steps...\n\n");
+            }
+            
+            userInput = `I have executed the requested actions. 
+
+Original request: "${originalUserInput}"
+
+Please analyze the current screenshot carefully and determine:
+1. Has the original goal been accomplished? If so, confirm completion.
+2. If not, what is the next specific action needed to accomplish the goal?
+3. Are there any obstacles or issues that need to be addressed?
+
+Look at what's currently visible on the screen and either complete the task or take the next necessary action.`;
           }
           
           currentStep++;
           continue;
+        } else {
+          if (currentStep === 0) {
+            logger.info('No tool calls generated on first step, task may be informational only');
+          } else {
+            logger.info('No more tool calls generated, task appears complete');
+          }
+          break;
         }
       } catch (streamError) {
         logger.error('Error in streaming text generation:', streamError);
         if (callbacks.onText) {
-          callbacks.onText(`\nEncountered an error: ${streamError instanceof Error ? streamError.message : 'Unknown error'}`);
+          callbacks.onText(`\nEncountered an error: ${streamError instanceof Error ? streamError.message : 'Unknown error'}\n`);
         }
         
-        // Take a new screenshot to ensure we have the latest context
         const errorScreenshotInfo = await captureAutomaticScreenshot();
         screenshotBuffer = fs.readFileSync(errorScreenshotInfo.resizedScreenshotPath);
         
-        userInput = `There was an error processing your request. Let's try a different approach based on what you can see in the screenshot.`;
+        userInput = `There was an error processing the request. Let's try a different approach for the original goal: "${originalUserInput}"`;
         currentStep++;
         continue;
       }
-      
-      break;
+    }
+    
+    if (currentStep >= maxSteps) {
+      logger.warn(`Streaming agent loop reached maximum steps (${maxSteps}), stopping execution`);
+      const maxStepsMessage = `\n\n[Note: Reached maximum number of steps (${maxSteps}). The task may require manual completion or a different approach.]`;
+      finalText += maxStepsMessage;
+      if (callbacks.onText) {
+        callbacks.onText(maxStepsMessage);
+      }
     }
     
     if (callbacks.onComplete) {
@@ -289,12 +360,10 @@ export async function streamAgentLoop(
   }
 }
 
-// Helper function to execute a tool call with better error handling
 async function executeToolCall(toolName: string, args: any, tools: any) {
   logger.info(`Executing tool ${toolName} with args: ${JSON.stringify(args)}`);
   
   try {
-    // Find the tool in the tools object
     const tool = tools[toolName];
     
     if (!tool) {
@@ -307,7 +376,6 @@ async function executeToolCall(toolName: string, args: any, tools: any) {
       throw new Error(`Tool ${toolName} does not have an execute function`);
     }
     
-    // Execute the tool with timeout
     const result = await Promise.race([
       tool.execute(args),
       new Promise((_, reject) => 
