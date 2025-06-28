@@ -222,7 +222,11 @@ export async function streamAgentLoop(
           onError: (error) => {
             logger.error('Stream error:', error);
             if (callbacks.onText) {
-              callbacks.onText(`\nEncountered an error: ${error.error.message}\n`);
+              const errorMessage = error instanceof Error ? error.message : 
+                                   (error as any)?.error?.message || 
+                                   (error as any)?.message || 
+                                   'Unknown error';
+              callbacks.onText(`\nEncountered an error: ${errorMessage}\n`);
             }
           }
         });
