@@ -1,11 +1,4 @@
-export * from "./core";
-export * from "./tools";
-
-export type {
-  CoreMessage,
-  CoreToolCall,
-  CoreToolResult,
-  LanguageModel,
-} from "ai";
-
-export type { ToolExecutionContext } from "./types/";
+export * from './client.js';
+export * from './constants/index.js';
+export * from './tools/index.js';
+export * from './types/index.js';

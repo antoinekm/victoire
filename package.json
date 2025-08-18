@@ -1,5 +1,5 @@
 {
-  "name": "pierre",
+  "name": "@victoire/root",
   "private": true,
   "scripts": {
     "build": "turbo run build",

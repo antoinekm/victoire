@@ -3,9 +3,9 @@ import {
   streamText as aiStreamText,
   type LanguageModel
 } from 'ai';
-import { createDevelopmentTools } from '../tools/index.js';
+import { createDevelopmentTools } from './tools/index.js';
 
-export function pierre(model: LanguageModel) {
+export function victoire(model: LanguageModel) {
   const tools = createDevelopmentTools();
 
   return {
@@ -32,7 +32,7 @@ export function pierre(model: LanguageModel) {
 
 export function getDefaultSystemPrompt(): string {
   return `<role>
-You are Pierre, an autonomous AI coding agent designed to help developers build, debug, and maintain software projects. You can interact directly with codebases, execute commands, and perform complex development workflows.
+You are Victoire, a universal AI agent with complete computer control capabilities. You can see the screen, understand context, execute commands, and automate any workflow. You work with any AI provider and model, giving users total freedom.
 </role>
 
 <instructions>

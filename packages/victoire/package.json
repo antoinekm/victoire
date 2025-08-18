@@ -1,43 +1,53 @@
 {
-  "name": "@victoire/core",
+  "name": "victoire",
   "version": "0.0.1",
   "description": "Any Provider. Any Model. Total Control.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "victoire": "dist/victoire.js"
+  },
   "scripts": {
     "build": "tsc",
-    "dev": "tsx src/index.ts",
-    "start": "node dist/index.js",
+    "dev": "tsx src/victoire.tsx",
+    "start": "node dist/victoire.js",
     "lint": "eslint . --max-warnings 0",
     "check-types": "tsc --noEmit",
     "test": "tsx --test 'tests/**/*.ts'"
   },
   "keywords": [
     "ai",
-    "automation", 
-    "computer-vision",
+    "automation",
+    "computer-vision", 
     "system-control",
     "multi-provider",
     "local-llm",
     "universal",
+    "cli",
     "agent"
   ],
   "author": "Antoine",
   "license": "MIT",
   "dependencies": {
-    "@ai-sdk/anthropic": "^2.0.4",
-    "@ai-sdk/google": "^1.0.8",
-    "@ai-sdk/openai": "^1.3.22",
-    "ai": "^4.3.15",
+    "@victoire/core": "workspace:*",
     "dotenv": "^17.1.0",
-    "zod": "^3.25.76",
-    "glob": "^10.4.1",
-    "fast-glob": "^3.3.2"
+    "ink": "^6.1.1",
+    "ink-big-text": "^2.0.0",
+    "ink-gradient": "^3.0.0",
+    "ink-link": "^4.1.0",
+    "ink-select-input": "^6.2.0",
+    "ink-spinner": "^5.0.0",
+    "ink-text-input": "^6.0.0",
+    "react": "^19.1.0",
+    "yargs": "^17.7.2"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
     "@types/node": "^20.11.24",
+    "@types/react": "^19.1.8",
+    "@types/yargs": "^17.0.32",
+    "ink-testing-library": "^4.0.0",
     "tsx": "^4.19.2",
     "typescript": "^5.3.3"
   },

@@ -2,12 +2,12 @@ import { test, describe } from 'node:test';
 import { strict as assert } from 'node:assert';
 import dotenv from 'dotenv';
 import { openai } from '@ai-sdk/openai';
-import { pierre } from '../../src/core/client.js';
+import { victoire } from '../../src/client.js';
 
 // Load environment variables
 dotenv.config();
 
-describe('pierre e2e tests', () => {
+describe('victoire e2e tests', () => {
   test('should make real API call if key available', async () => {
     if (!process.env.OPENAI_API_KEY) {
       console.log('⏭️  Skipping live API test - no OPENAI_API_KEY');
@@ -15,19 +15,19 @@ describe('pierre e2e tests', () => {
     }
 
     const model = openai('gpt-4o-mini'); // Direct AI SDK usage
-    const client = pierre(model);
+    const client = victoire(model);
     
     const response = await client.generateText({
       messages: [
         {
           role: 'user',
-          content: 'Say "Pierre core test successful!" - no tools needed.'
+          content: 'Say "Victoire core test successful!" - no tools needed.'
         }
       ]
     });
     
     assert.ok(response.text);
-    assert.ok(response.text.includes('Pierre') || response.text.includes('successful'));
+    assert.ok(response.text.includes('Victoire') || response.text.includes('successful'));
   });
 
   test('should handle streaming if key available', async () => {
@@ -37,7 +37,7 @@ describe('pierre e2e tests', () => {
     }
 
     const model = openai('gpt-4o-mini');
-    const client = pierre(model);
+    const client = victoire(model);
     const chunks: string[] = [];
     
     const result = client.streamText({
@@ -67,7 +67,7 @@ describe('pierre e2e tests', () => {
     }
 
     const model = openai('gpt-4o-mini');
-    const client = pierre(model);
+    const client = victoire(model);
     
     const response = await client.generateText({
       messages: [
