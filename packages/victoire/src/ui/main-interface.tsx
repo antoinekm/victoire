@@ -22,10 +22,10 @@ export function MainInterface({ cwd }: MainInterfaceProps) {
 
   return (
     <Box flexDirection="column">
-      <Box borderStyle="round" borderColor="cyan" paddingX={2} paddingY={1} marginBottom={1}>
+      <Box borderStyle="round" borderColor="#ff69b4" paddingX={2} paddingY={1} marginBottom={1}>
         <Box flexDirection="column">
           <Box marginBottom={1}>
-            <Text bold><Text color="cyan">⬢</Text> victoire v0.0.1</Text>
+            <Text bold><Text color="#ff69b4">⬢</Text> victoire v0.0.1</Text>
           </Box>
           
           <Box marginBottom={1}>

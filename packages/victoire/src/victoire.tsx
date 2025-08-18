@@ -1,4 +1,3 @@
-import React from 'react';
 import { render } from 'ink';
 import { App } from './ui/app.js';
 import dotenv from 'dotenv';
@@ -38,3 +37,9 @@ export async function main() {
     process.exit(0);
   });
 }
+
+// Start the application
+main().catch((error) => {
+  console.error('Failed to start Victoire CLI:', error);
+  process.exit(1);
+});

@@ -28,6 +28,10 @@ export function App() {
     setState({ type: 'api-key-setup', provider });
   };
 
+  const handleGoBack = () => {
+    setState({ type: 'provider-selection' });
+  };
+
   const handleApiKeySubmit = async (apiKey: string) => {
     if (state.type !== 'api-key-setup') return;
     
@@ -50,7 +54,7 @@ export function App() {
     case 'provider-selection':
       return <ProviderSelection onSelect={handleProviderSelect} />;
     case 'api-key-setup':
-      return <ApiKeySetup provider={state.provider} onSubmit={handleApiKeySubmit} />;
+      return <ApiKeySetup provider={state.provider} onSubmit={handleApiKeySubmit} onBack={handleGoBack} />;
     case 'main':
       return <MainInterface cwd={process.cwd()} />;
   }

@@ -18,9 +18,9 @@ export function ProviderSelection({ onSelect }: ProviderSelectionProps) {
   };
 
   return (
-    <Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={2} paddingY={1}>
+    <Box flexDirection="column" borderStyle="round" borderColor="#ff69b4" paddingX={2} paddingY={1}>
       <Box marginBottom={1}>
-        <Text bold><Text color="cyan">⬢</Text> victoire v0.0.1</Text>
+        <Text bold><Text color="#ff69b4">⬢</Text> victoire v0.0.1</Text>
       </Box>
       
       <Box>
