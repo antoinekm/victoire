@@ -1,7 +1,8 @@
 {
-  "name": "@victoire/core",
-  "version": "0.0.1",
+  "name": "@victoire.run/core",
+  "version": "0.0.0",
   "description": "Any Provider. Any Model. Total Control.",
+  "private": false,
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
