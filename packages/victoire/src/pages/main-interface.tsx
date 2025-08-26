@@ -2,8 +2,9 @@ import React from 'react';
 import { Box, Text } from 'ink';
 import TextInput from 'ink-text-input';
 import { victoire } from '@victoire.run/core';
-import { createLanguageModel } from '../ai-models.js';
-import { loadSettings } from '../settings.js';
+import { createLanguageModel } from '../services/ai-models.js';
+import { loadSettings } from '../services/settings.js';
+import { VERSION } from '../utils/version.js';
 
 interface MainInterfaceProps {
   cwd: string;
@@ -60,7 +61,7 @@ export function MainInterface({ cwd }: MainInterfaceProps) {
       <Box borderStyle="round" borderColor="#ff69b4" paddingX={2} paddingY={1} marginBottom={1}>
         <Box flexDirection="column">
           <Box marginBottom={1}>
-            <Text bold><Text color="#ff69b4">⬢</Text> victoire v0.0.1</Text>
+            <Text bold><Text color="#ff69b4">⬢</Text> victoire v{VERSION}</Text>
           </Box>
           
           <Box marginBottom={1}>

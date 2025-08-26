@@ -12,7 +12,6 @@ export function createLanguageModel(settings: Settings): any {
     throw new Error(`No API key configured for provider: ${provider}`);
   }
 
-  // Set API keys as environment variables for the AI SDK
   switch (provider) {
     case 'openai':
       process.env.OPENAI_API_KEY = apiKey;

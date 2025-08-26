@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Box, Text } from 'ink';
 import SelectInput from 'ink-select-input';
 import { defaultProviders, type DefaultProvider } from '@victoire.run/core';
+import { VERSION } from '../utils/version.js';
 
 interface ProviderSelectionProps {
   onSelect: (provider: DefaultProvider) => void;
@@ -20,7 +21,7 @@ export function ProviderSelection({ onSelect }: ProviderSelectionProps) {
   return (
     <Box flexDirection="column" borderStyle="round" borderColor="#ff69b4" paddingX={2} paddingY={1}>
       <Box marginBottom={1}>
-        <Text bold><Text color="#ff69b4">⬢</Text> victoire v0.0.1</Text>
+        <Text bold><Text color="#ff69b4">⬢</Text> victoire v{VERSION}</Text>
       </Box>
       
       <Box>
@@ -30,7 +31,7 @@ export function ProviderSelection({ onSelect }: ProviderSelectionProps) {
         <Text dimColor>To change this later, run /provider</Text>
       </Box>
       
-      <Box marginTop={1}>
+      <Box>
         <SelectInput items={items} onSelect={handleSelect} />
       </Box>
       

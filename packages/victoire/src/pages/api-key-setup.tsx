@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Box, Text } from 'ink';
-import TextInput from 'ink-text-input';
+import { LongTextInput } from '../components/long-text-input.js';
 import { defaultProviders, type DefaultProvider } from '@victoire.run/core';
 
 interface ApiKeySetupProps {
@@ -11,6 +11,17 @@ interface ApiKeySetupProps {
 
 export function ApiKeySetup({ provider, onSubmit, onBack }: ApiKeySetupProps) {
   const [apiKey, setApiKey] = useState('');
+
+  useEffect(() => {
+    const envVarName = provider === 'openai' ? 'OPENAI_API_KEY' : 
+                       provider === 'anthropic' ? 'ANTHROPIC_API_KEY' : 
+                       provider === 'google' ? 'GOOGLE_GENERATIVE_AI_API_KEY' : '';
+    
+    const envKey = process.env[envVarName];
+    if (envKey) {
+      setApiKey(envKey);
+    }
+  }, [provider]);
 
   const handleSubmit = () => {
     if (apiKey.trim()) {
@@ -45,17 +56,30 @@ export function ApiKeySetup({ provider, onSubmit, onBack }: ApiKeySetupProps) {
           <Box marginBottom={1} flexDirection="column">
             <Text>Get your API key from:</Text>
             <Text color="#ff69b4">{defaultProviders[provider].url}</Text>
+            {provider === 'openai' && (
+              <Box marginTop={1}>
+                <Text dimColor>💡 Tip: For long API keys, set OPENAI_API_KEY env variable before running victoire</Text>
+              </Box>
+            )}
           </Box>
           
           <Box>
             <Text>{'>'}{'  '}</Text>
-            <TextInput
+            <LongTextInput
               value={apiKey}
               onChange={setApiKey}
               onSubmit={handleSubmit}
               placeholder={`Paste your API Key here (${defaultProviders[provider].prefix})`}
             />
           </Box>
+          {apiKey.length > 0 && (
+            <Box marginTop={1} flexDirection="column">
+              <Text dimColor>Length: {apiKey.length} chars</Text>
+              {provider === 'openai' && apiKey.length < 160 && (
+                <Text color="yellow">⚠️  OpenAI keys are typically ~164 chars. Your key might be truncated.</Text>
+              )}
+            </Box>
+          )}
         </Box>
       </Box>
       

@@ -33,7 +33,7 @@ export function ModelSelection({ provider, onSelect, onBack }: ModelSelectionPro
         <Text dimColor>Choose the AI model for your {providerConfig.name} setup</Text>
       </Box>
       
-      <Box marginTop={1}>
+      <Box>
         <SelectInput items={items} onSelect={handleSelect} />
       </Box>
       

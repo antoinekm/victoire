@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { loadSettings, saveSettings, hasConfiguredApiKey, type Settings } from '../settings.js';
-import { ProviderSelection } from './provider-selection.js';
-import { ApiKeySetup } from './api-key-setup.js';
-import { ModelSelection } from './model-selection.js';
-import { MainInterface } from './main-interface.js';
+import { loadSettings, saveSettings, hasConfiguredApiKey, type Settings } from './services/settings.js';
+import { ProviderSelection } from './pages/provider-selection.js';
+import { ApiKeySetup } from './pages/api-key-setup.js';
+import { ModelSelection } from './pages/model-selection.js';
+import { MainInterface } from './pages/main-interface.js';
 import type { DefaultProvider } from '@victoire.run/core';
 
 type AppState = 
