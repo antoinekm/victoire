@@ -5,7 +5,7 @@ import { resolve } from 'node:path';
 
 export const readFileTool = tool({
   description: 'Read the contents of a file',
-  parameters: z.object({
+  inputSchema: z.object({
     path: z.string().describe('Path to the file to read'),
     encoding: z.enum(['utf8', 'binary']).default('utf8').describe('File encoding'),
   }),

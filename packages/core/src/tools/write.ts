@@ -5,7 +5,7 @@ import { resolve, dirname } from 'node:path';
 
 export const writeFileTool = tool({
   description: 'Write content to a file, creating directories if needed',
-  parameters: z.object({
+  inputSchema: z.object({
     path: z.string().describe('Path to the file to write'),
     content: z.string().describe('Content to write to the file'),
     encoding: z.enum(['utf8', 'binary']).default('utf8').describe('File encoding'),

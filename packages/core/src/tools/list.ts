@@ -5,7 +5,7 @@ import { resolve, join } from 'node:path';
 
 export const listDirectoryTool = tool({
   description: 'List contents of a directory',
-  parameters: z.object({
+  inputSchema: z.object({
     path: z.string().default('.').describe('Directory path to list'),
     recursive: z.boolean().default(false).describe('List contents recursively'),
     includeHidden: z.boolean().default(false).describe('Include hidden files and directories'),

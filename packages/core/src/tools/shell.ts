@@ -7,7 +7,7 @@ const execAsync = promisify(exec);
 
 export const shellTool = tool({
   description: 'Execute a shell command',
-  parameters: z.object({
+  inputSchema: z.object({
     command: z.string().describe('Shell command to execute'),
     cwd: z.string().optional().describe('Working directory for the command'),
     timeout: z.number().default(30000).describe('Timeout in milliseconds'),

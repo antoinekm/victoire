@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Text, useInput } from 'ink';
 import TextInput from 'ink-text-input';
 import { victoire } from '@victoire.run/core';
+import { stepCountIs } from 'ai';
 import { createLanguageModel } from '../services/ai-models.js';
 import { loadSettings } from '../services/settings.js';
 import { VERSION } from '../utils/version.js';
@@ -71,7 +72,7 @@ export function MainInterface({ cwd }: MainInterfaceProps) {
     setInput('');
     
     // Select a random thinking message
-    const randomMessage = thinkingMessages[Math.floor(Math.random() * thinkingMessages.length)];
+    const randomMessage = thinkingMessages[Math.floor(Math.random() * thinkingMessages.length)] || 'Thinking';
     setCurrentThinkingMessage(randomMessage);
     
     // Create abort controller for this request
@@ -87,14 +88,20 @@ export function MainInterface({ cwd }: MainInterfaceProps) {
       }
       
       const model = createLanguageModel(settings);
-      const ai = victoire(model);
+      const agent = victoire(model);
       
-      const result = await ai.generateText({
-        messages: [...messages, userMessage].map(msg => ({
-          role: msg.role,
-          content: msg.content
-        })),
-        abortSignal: controller.signal
+      // Construct conversation context for the agent
+      const conversationContext = [...messages, userMessage]
+        .map(msg => `${msg.role === 'user' ? 'Human' : 'Assistant'}: ${msg.content}`)
+        .join('\n\n');
+      
+      const result = await agent.generateText({
+        prompt: conversationContext,
+        stopWhen: [stepCountIs(10)],
+        onStepFinish: (step) => {
+          // TODO: Show step progress in UI if needed
+          console.log('Step finished:', step.content);
+        }
       });
       
       const assistantMessage = { role: 'assistant' as const, content: result.text };

@@ -6,7 +6,7 @@ import { glob } from 'glob';
 
 export const searchFilesTool = tool({
   description: 'Search for files using glob patterns',
-  parameters: z.object({
+  inputSchema: z.object({
     pattern: z.string().describe('Glob pattern to search for files (e.g., "**/*.ts", "src/**/*.js")'),
     cwd: z.string().default('.').describe('Directory to search in'),
     maxResults: z.number().default(100).describe('Maximum number of results to return'),
@@ -79,7 +79,7 @@ export const searchFilesTool = tool({
 
 export const grepTool = tool({
   description: 'Search for text patterns within files',
-  parameters: z.object({
+  inputSchema: z.object({
     pattern: z.string().describe('Text pattern or regex to search for'),
     filePattern: z.string().default('**/*').describe('File pattern to search in (glob)'),
     cwd: z.string().default('.').describe('Directory to search in'),
