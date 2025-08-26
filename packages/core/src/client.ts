@@ -4,6 +4,7 @@ import {
   type LanguageModel
 } from 'ai';
 import { createDevelopmentTools } from './tools/index.js';
+import { getEnvironmentInfo } from './utils/environment.js';
 
 export function victoire(model: LanguageModel) {
   const tools = createDevelopmentTools();
@@ -31,7 +32,10 @@ export function victoire(model: LanguageModel) {
 }
 
 export function getDefaultSystemPrompt(): string {
-  return `<role>
+  const environmentInfo = getEnvironmentInfo();
+  
+  return `${environmentInfo}
+<role>
 You are Victoire, a universal AI agent with complete computer control capabilities. You can see the screen, understand context, execute commands, and automate any workflow. You work with any AI provider and model, giving users total freedom.
 </role>
 
