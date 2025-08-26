@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Text } from 'ink';
+import { Box, Text, useInput } from 'ink';
 import TextInput from 'ink-text-input';
 import { victoire } from '@victoire.run/core';
 import { createLanguageModel } from '../services/ai-models.js';
@@ -10,10 +10,54 @@ interface MainInterfaceProps {
   cwd: string;
 }
 
+const thinkingMessages = [
+  'Puzzling',
+  'Pondering',
+  'Contemplating',
+  'Processing',
+  'Analyzing',
+  'Reflecting',
+  'Considering',
+  'Exploring',
+  'Synthesizing',
+  'Deliberating'
+];
+
 export function MainInterface({ cwd }: MainInterfaceProps) {
   const [input, setInput] = React.useState('');
   const [messages, setMessages] = React.useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [currentThinkingMessage, setCurrentThinkingMessage] = React.useState('');
+  const [animationFrame, setAnimationFrame] = React.useState(0);
+
+  const hexagonFrames = ['⬢', '⬡', '⬣'];
+  const [abortController, setAbortController] = React.useState<AbortController | null>(null);
+
+  // Animation effect for hexagon spinning
+  React.useEffect(() => {
+    if (!isLoading) return;
+    
+    const interval = setInterval(() => {
+      setAnimationFrame(prev => (prev + 1) % hexagonFrames.length);
+    }, 300); // Change frame every 300ms
+    
+    return () => clearInterval(interval);
+  }, [isLoading, hexagonFrames.length]);
+
+  useInput((input, key) => {
+    if (key.escape && isLoading && abortController) {
+      abortController.abort();
+      setIsLoading(false);
+      setAbortController(null);
+      // Find the last user message to show with the interruption
+      const lastUserMessage = messages.filter(msg => msg.role === 'user').pop();
+      const interruptMessage = { 
+        role: 'assistant' as const, 
+        content: `INTERRUPT:${lastUserMessage?.content || ''}`
+      };
+      setMessages(prev => [...prev, interruptMessage]);
+    }
+  });
 
   const handleSubmit = async (value: string) => {
     if (value === '/quit') {
@@ -25,6 +69,15 @@ export function MainInterface({ cwd }: MainInterfaceProps) {
     const userMessage = { role: 'user' as const, content: value };
     setMessages(prev => [...prev, userMessage]);
     setInput('');
+    
+    // Select a random thinking message
+    const randomMessage = thinkingMessages[Math.floor(Math.random() * thinkingMessages.length)];
+    setCurrentThinkingMessage(randomMessage);
+    
+    // Create abort controller for this request
+    const controller = new AbortController();
+    setAbortController(controller);
+    setAnimationFrame(0); // Reset animation
     setIsLoading(true);
     
     try {
@@ -40,19 +93,25 @@ export function MainInterface({ cwd }: MainInterfaceProps) {
         messages: [...messages, userMessage].map(msg => ({
           role: msg.role,
           content: msg.content
-        }))
+        })),
+        abortSignal: controller.signal
       });
       
       const assistantMessage = { role: 'assistant' as const, content: result.text };
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
-      const errorMessage = { 
-        role: 'assistant' as const, 
-        content: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      if (error instanceof Error && error.name === 'AbortError') {
+        // Request was aborted, no need to add error message as it's already handled in useInput
+      } else {
+        const errorMessage = { 
+          role: 'assistant' as const, 
+          content: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+        };
+        setMessages(prev => [...prev, errorMessage]);
+      }
     } finally {
       setIsLoading(false);
+      setAbortController(null);
     }
   };
 
@@ -73,16 +132,26 @@ export function MainInterface({ cwd }: MainInterfaceProps) {
       </Box>
 
       {messages.map((msg, i) => (
-        <Box key={i} marginX={2} marginY={msg.role === 'assistant' ? 1 : 0}>
-          <Text color={msg.role === 'user' ? 'cyan' : 'green'}>
-            {msg.role === 'user' ? '> ' : '⭐ '}{msg.content}
-          </Text>
+        <Box key={i} marginRight={2} marginY={msg.role === 'assistant' ? 1 : 0}>
+          {msg.content.startsWith('INTERRUPT:') ? (
+            <Box flexDirection="column">
+              <Text color="gray">{'> '}{msg.content.slice(10)}</Text>
+              <Box marginLeft={2}>
+                <Text color="redBright">⎿  Interrupted by user</Text>
+              </Box>
+            </Box>
+          ) : (
+            <Text color={msg.role === 'user' ? 'gray' : 'white'}>
+              {msg.role === 'user' ? '> ' : '⏺ '}{msg.content}
+            </Text>
+          )}
         </Box>
       ))}
       
       {isLoading && (
-        <Box marginX={2}>
-          <Text color="yellow">⏳ Thinking...</Text>
+        <Box marginY={1}>
+          <Text color="#ff69b4">{hexagonFrames[animationFrame]} {currentThinkingMessage}…</Text>
+          <Text color="gray"> (esc to interrupt)</Text>
         </Box>
       )}
 
