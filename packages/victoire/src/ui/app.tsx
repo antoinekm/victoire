@@ -4,7 +4,7 @@ import { ProviderSelection } from './provider-selection.js';
 import { ApiKeySetup } from './api-key-setup.js';
 import { ModelSelection } from './model-selection.js';
 import { MainInterface } from './main-interface.js';
-import type { DefaultProvider } from '@victoire/core';
+import type { DefaultProvider } from '@victoire.run/core';
 
 type AppState = 
   | { type: 'loading' }

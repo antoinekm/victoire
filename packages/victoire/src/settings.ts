@@ -2,7 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 
-import type { DefaultProvider } from '@victoire/core';
+import type { DefaultProvider } from '@victoire.run/core';
 
 export interface Settings {
   $schema?: string;

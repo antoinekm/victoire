@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { TerminalIcon } from 'lucide-react';
-import { defaultProviders } from '@victoire/core/src/constants/providers';
+import { defaultProviders } from '@victoire.run/core/src/constants/providers';
 
 export function ConfigAnimation() {
   const apiKey = 'sk-ant-api03_bRs5mK8XzY9wQ2fJ7nP4tU6v';

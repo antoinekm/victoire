@@ -1,2 +1,2 @@
-// Re-export from @victoire/core for convenience
-export * from '@victoire/core';
+// Re-export from @victoire.run/core for convenience
+export * from '@victoire.run/core';

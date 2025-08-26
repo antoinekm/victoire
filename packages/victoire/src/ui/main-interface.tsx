@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import TextInput from 'ink-text-input';
-import { victoire } from '@victoire/core';
+import { victoire } from '@victoire.run/core';
 import { createLanguageModel } from '../ai-models.js';
 import { loadSettings } from '../settings.js';
 

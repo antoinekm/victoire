@@ -1,4 +1,4 @@
-# @victoire/core
+# @victoire.run/core
 
 🏆 **Any Provider. Any Model. Total Control.**
 
@@ -7,13 +7,13 @@ Core AI engine for Victoire - the universal AI agent with complete provider flex
 ## Installation
 
 ```bash
-npm install @victoire/core
+npm install @victoire.run/core
 ```
 
 ## Usage
 
 ```typescript
-import { victoire, defaultProviders } from '@victoire/core';
+import { victoire, defaultProviders } from '@victoire.run/core';
 import { openai } from '@ai-sdk/openai';
 
 // Create client with any model

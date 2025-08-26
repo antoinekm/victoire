@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Box, Text } from 'ink';
 import TextInput from 'ink-text-input';
-import { defaultProviders, type DefaultProvider } from '@victoire/core';
+import { defaultProviders, type DefaultProvider } from '@victoire.run/core';
 
 interface ApiKeySetupProps {
   provider: DefaultProvider;

@@ -2,7 +2,7 @@
 
 import { Fragment, ReactElement, useEffect, useState } from 'react';
 import { TerminalIcon } from 'lucide-react';
-import { defaultProviders } from '@victoire/core/src/constants/providers';
+import { defaultProviders } from '@victoire.run/core/src/constants/providers';
 
 export function TerminalAnimation() {
   const installCmd = 'npm i -g victoire';

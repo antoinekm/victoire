@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import SelectInput from 'ink-select-input';
-import { defaultProviders, type DefaultProvider } from '@victoire/core';
+import { defaultProviders, type DefaultProvider } from '@victoire.run/core';
 
 interface ModelSelectionProps {
   provider: DefaultProvider;
