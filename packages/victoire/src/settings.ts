@@ -7,10 +7,11 @@ import type { DefaultProvider } from '@victoire/core';
 export interface Settings {
   $schema?: string;
   provider: DefaultProvider;
+  model?: string;
   apiKeys: {
-    openai: string | null;
-    anthropic: string | null;
-    google: string | null;
+    openai?: string;
+    anthropic?: string;
+    google?: string;
   };
 }
 
@@ -32,7 +33,7 @@ export async function saveSettings(settings: Settings): Promise<void> {
     SETTINGS_FILE,
     JSON.stringify(
       {
-        $schema: 'https://www.schemastore.org/victoire-settings.json',
+        $schema: 'https://victoire.run/schema.json',
         ...settings,
       },
       null,
@@ -43,5 +44,6 @@ export async function saveSettings(settings: Settings): Promise<void> {
 
 export function hasConfiguredApiKey(settings: Settings): boolean {
   const { provider, apiKeys } = settings;
-  return apiKeys[provider] !== null && apiKeys[provider] !== '';
+  const apiKey = apiKeys[provider];
+  return apiKey !== undefined && apiKey !== null && apiKey !== '';
 }

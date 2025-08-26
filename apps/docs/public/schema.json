@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://victoire.run/schema.json",
+  "title": "Victoire Settings",
+  "description": "Configuration schema for Victoire CLI settings",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON schema URL for validation",
+      "default": "https://victoire.run/schema.json"
+    },
+    "provider": {
+      "type": "string",
+      "enum": ["openai", "anthropic", "google"],
+      "description": "The AI provider to use",
+      "examples": ["openai", "anthropic", "google"]
+    },
+    "model": {
+      "type": "string",
+      "description": "The AI model to use (optional)",
+      "examples": ["gpt-4o", "claude-3-5-sonnet-20241022", "gemini-2.0-flash-exp"]
+    },
+    "apiKeys": {
+      "type": "object",
+      "description": "API keys for different providers",
+      "properties": {
+        "openai": {
+          "type": "string",
+          "description": "OpenAI API key (starts with sk-)",
+          "pattern": "^sk-[a-zA-Z0-9]+$",
+          "examples": ["sk-your-openai-api-key-here"]
+        },
+        "anthropic": {
+          "type": "string",
+          "description": "Anthropic API key (starts with sk-ant-)",
+          "pattern": "^sk-ant-[a-zA-Z0-9-]+$",
+          "examples": ["sk-ant-your-anthropic-api-key-here"]
+        },
+        "google": {
+          "type": "string",
+          "description": "Google Generative AI API key (starts with AIza)",
+          "pattern": "^AIza[a-zA-Z0-9_-]+$",
+          "examples": ["AIza-your-google-api-key-here"]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["provider", "apiKeys"],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "$schema": "https://victoire.run/schema.json",
+      "provider": "openai",
+      "model": "gpt-4o",
+      "apiKeys": {
+        "openai": "sk-your-openai-api-key-here"
+      }
+    },
+    {
+      "$schema": "https://victoire.run/schema.json",
+      "provider": "anthropic",
+      "model": "claude-3-5-sonnet-20241022",
+      "apiKeys": {
+        "anthropic": "sk-ant-your-anthropic-api-key-here"
+      }
+    }
+  ]
+}
