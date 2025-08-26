@@ -28,7 +28,7 @@
         "openai": {
           "type": "string",
           "description": "OpenAI API key (starts with sk-)",
-          "pattern": "^sk-[a-zA-Z0-9]+$",
+          "pattern": "^sk-[a-zA-Z0-9_-]+$",
           "examples": ["sk-your-openai-api-key-here"]
         },
         "anthropic": {
