@@ -34,6 +34,7 @@
     "dotenv": "^17.1.0",
     "fast-glob": "^3.3.2",
     "glob": "^10.4.1",
+    "picocolors": "^1.1.1",
     "zod": "^3.25.76"
   },
   "devDependencies": {
