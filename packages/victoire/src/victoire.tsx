@@ -2,7 +2,7 @@ import { render } from 'ink';
 import { App } from './app.js';
 import dotenv from 'dotenv';
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 function setupUnhandledRejectionHandler() {
   process.on('unhandledRejection', (reason, promise) => {
