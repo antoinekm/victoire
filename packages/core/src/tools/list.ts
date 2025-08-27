@@ -64,7 +64,7 @@ export const listDirectoryTool = tool({
           contents,
           count: contents.length,
         },
-        message: `Listed ${contents.length} items in: ${path}`,
+        message: `Listed ${contents.length} paths`,
       };
     } catch (error) {
       return {

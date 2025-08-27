@@ -6,12 +6,12 @@ import { searchFilesTool, grepTool } from './search';
 
 export function createDevelopmentTools() {
   return {
-    readFile: readFileTool,
-    writeFile: writeFileTool,
-    shell: shellTool,
-    listDirectory: listDirectoryTool,
-    searchFiles: searchFilesTool,
-    grep: grepTool,
+    Read: readFileTool,
+    Write: writeFileTool,
+    Shell: shellTool,
+    List: listDirectoryTool,
+    Search: searchFilesTool,
+    Grep: grepTool,
   };
 }
 
