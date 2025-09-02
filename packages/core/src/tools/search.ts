@@ -66,12 +66,14 @@ export const searchFilesTool = tool({
           showing: limitedFiles.length,
         },
         message: `Found ${files.length} files matching pattern: ${pattern}`,
+        display: pattern,
       };
     } catch (error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
         message: `Failed to search files with pattern: ${pattern}`,
+        display: pattern,
       };
     }
   },
@@ -148,12 +150,14 @@ export const grepTool = tool({
           filesSearched: files.length,
         },
         message: `Found ${matches.length} matches for pattern: ${pattern}`,
+        display: pattern,
       };
     } catch (error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
         message: `Failed to search for pattern: ${pattern}`,
+        display: pattern,
       };
     }
   },

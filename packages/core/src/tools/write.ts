@@ -29,6 +29,7 @@ export const writeFileTool = tool({
           size: content.length,
         },
         message: `Successfully wrote ${content.length} characters to: ${path}`,
+        display: path,
       };
     } catch (error) {
       return {

@@ -45,13 +45,12 @@ export function MainInterface({ cwd }: MainInterfaceProps) {
   const hexagonFrames = ['⬢', '⬡', '⬣'];
   const [abortController, setAbortController] = React.useState<AbortController | null>(null);
 
-  // Animation effect for hexagon spinning
   React.useEffect(() => {
     if (!isLoading) return;
     
     const interval = setInterval(() => {
       setAnimationFrame(prev => (prev + 1) % hexagonFrames.length);
-    }, 300); // Change frame every 300ms
+    }, 300);
     
     return () => clearInterval(interval);
   }, [isLoading, hexagonFrames.length]);
@@ -61,7 +60,6 @@ export function MainInterface({ cwd }: MainInterfaceProps) {
       abortController.abort();
       setIsLoading(false);
       setAbortController(null);
-      // Find the last user message to show with the interruption
       const lastUserMessage = messages.filter(msg => 'role' in msg && msg.role === 'user').pop();
       const interruptMessage: ModelMessage = { 
         role: 'assistant', 
@@ -82,14 +80,12 @@ export function MainInterface({ cwd }: MainInterfaceProps) {
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     
-    // Select a random thinking message
     const randomMessage = thinkingMessages[Math.floor(Math.random() * thinkingMessages.length)] || 'Thinking';
     setCurrentThinkingMessage(randomMessage);
     
-    // Create abort controller for this request
     const controller = new AbortController();
     setAbortController(controller);
-    setAnimationFrame(0); // Reset animation
+    setAnimationFrame(0);
     setIsLoading(true);
     
     try {
@@ -101,7 +97,6 @@ export function MainInterface({ cwd }: MainInterfaceProps) {
       const model = createLanguageModel(settings);
       const agent = victoire(model);
       
-      // Construct conversation context for the agent  
       const modelMessages = [...messages, userMessage].filter((msg): msg is ModelMessage => 'role' in msg);
       const conversationContext = modelMessages
         .map(msg => {
@@ -117,32 +112,33 @@ export function MainInterface({ cwd }: MainInterfaceProps) {
         prompt: conversationContext,
         stopWhen: [stepCountIs(10)],
         onStepFinish: (step: StepResult<ToolSet>) => {
-          // Handle tool calls and results
           for (const content of step.content) {
             if (content.type === 'tool-call') {
-              // Add tool call message
               const stepMessage: StepMessage = {
                 type: 'step',
                 toolName: content.toolName,
-                success: true, // Will be updated when result comes
+                success: true,
                 summary: 'Starting...'
               };
               setMessages(prev => [...prev, stepMessage]);
             } else if (content.type === 'tool-result') {
-              // Update the last tool call message with result
               setMessages(prev => {
                 const newMessages = [...prev];
                 for (let i = newMessages.length - 1; i >= 0; i--) {
                   const msg = newMessages[i];
-                  if (msg && 'type' in msg && msg.type === 'step' && msg.toolName === content.toolName) {
+                  if (msg && 'type' in msg && msg.type === 'step' && msg.toolName.startsWith(content.toolName)) {
                     const output = content.output;
                     const success = output && typeof output === 'object' && 'success' in output ? Boolean(output.success) : true;
                     const summary = output && typeof output === 'object' && 'message' in output && typeof output.message === 'string' 
                       ? output.message 
                       : success ? 'Completed' : 'Failed';
                     
+                    const displayArg = output && typeof output === 'object' && 'display' in output ? output.display : '';
+                    const displayName = displayArg ? `${content.toolName}(${displayArg})` : content.toolName;
+                    
                     newMessages[i] = {
                       ...msg,
+                      toolName: displayName,
                       success,
                       summary
                     };
@@ -160,7 +156,7 @@ export function MainInterface({ cwd }: MainInterfaceProps) {
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
-        // Request was aborted, no need to add error message as it's already handled in useInput
+        
       } else {
         const errorMessage: ModelMessage = { 
           role: 'assistant', 

@@ -29,6 +29,7 @@ export const shellTool = tool({
           cwd,
         },
         message: `Command executed successfully: ${command}`,
+        display: command,
       };
     } catch (error: unknown) {
       const execError = error as any; // exec errors have specific properties
@@ -43,6 +44,7 @@ export const shellTool = tool({
           exitCode: execError.code,
         },
         message: `Command failed: ${command}`,
+        display: command,
       };
     }
   },

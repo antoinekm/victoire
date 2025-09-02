@@ -22,12 +22,14 @@ export const readFileTool = tool({
           size: content.length,
         },
         message: `Successfully read file: ${path}`,
+        display: path,
       };
     } catch (error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
         message: `Failed to read file: ${path}`,
+        display: path,
       };
     }
   },

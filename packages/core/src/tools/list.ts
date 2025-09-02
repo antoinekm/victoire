@@ -65,12 +65,14 @@ export const listDirectoryTool = tool({
           count: contents.length,
         },
         message: `Listed ${contents.length} paths`,
+        display: path,
       };
     } catch (error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
         message: `Failed to list directory: ${path}`,
+        display: path,
       };
     }
   },
