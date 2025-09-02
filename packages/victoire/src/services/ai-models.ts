@@ -1,10 +1,10 @@
 import { anthropic } from '@ai-sdk/anthropic';
 import { google } from '@ai-sdk/google';
 import { openai } from '@ai-sdk/openai';
-import type { DefaultProvider } from '@victoire.run/core';
+import { LanguageModel } from 'ai';
 import type { Settings } from './settings.js';
 
-export function createLanguageModel(settings: Settings): any {
+export function createLanguageModel(settings: Settings): LanguageModel {
   const { provider, apiKeys } = settings;
   const apiKey = apiKeys[provider];
   

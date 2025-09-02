@@ -3,6 +3,8 @@ import { writeFileTool } from './write.js';
 import { shellTool } from './shell.js';
 import { listDirectoryTool } from './list.js';
 import { searchFilesTool, grepTool } from './search.js';
+import { webSearchTool } from './websearch.js';
+import { webFetchTool } from './webfetch.js';
 
 export function createDevelopmentTools() {
   return {
@@ -12,6 +14,8 @@ export function createDevelopmentTools() {
     List: listDirectoryTool,
     Search: searchFilesTool,
     Grep: grepTool,
+    WebSearch: webSearchTool,
+    WebFetch: webFetchTool,
   };
 }
 
@@ -22,4 +26,6 @@ export {
   listDirectoryTool,
   searchFilesTool,
   grepTool,
+  webSearchTool,
+  webFetchTool,
 };

@@ -7,6 +7,7 @@ import type { StepResult, ToolSet } from 'ai';
 import { createLanguageModel } from '../services/ai-models.js';
 import { loadSettings } from '../services/settings.js';
 import { VERSION } from '../utils/version.js';
+import { terminalFormattingPrompt } from '../prompts/index.js';
 
 interface MainInterfaceProps {
   cwd: string;
@@ -110,6 +111,7 @@ export function MainInterface({ cwd }: MainInterfaceProps) {
       
       const result = await agent.generateText({
         prompt: conversationContext,
+        system: agent.systemPrompt + terminalFormattingPrompt,
         stopWhen: [stepCountIs(10)],
         onStepFinish: (step: StepResult<ToolSet>) => {
           for (const content of step.content) {

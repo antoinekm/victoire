@@ -1,0 +1,1 @@
+export { terminalFormattingPrompt } from './terminal-formatting.js';
