@@ -1,8 +1,8 @@
-import { readFileTool } from './read';
-import { writeFileTool } from './write';
-import { shellTool } from './shell';
-import { listDirectoryTool } from './list';
-import { searchFilesTool, grepTool } from './search';
+import { readFileTool } from './read.js';
+import { writeFileTool } from './write.js';
+import { shellTool } from './shell.js';
+import { listDirectoryTool } from './list.js';
+import { searchFilesTool, grepTool } from './search.js';
 
 export function createDevelopmentTools() {
   return {

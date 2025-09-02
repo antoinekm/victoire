@@ -12,6 +12,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/victoire.tsx",
+    "dev:watch": "tsx --watch src/victoire.tsx",
     "start": "node dist/victoire.js",
     "lint": "eslint . --max-warnings 0",
     "check-types": "tsc --noEmit",
