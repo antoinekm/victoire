@@ -1,6 +1,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import * as cheerio from 'cheerio';
+import { USER_AGENT } from '../constants/index.js';
 
 export const webFetchTool = tool({
   description: 'Fetch and extract content from a web page',
@@ -13,7 +14,7 @@ export const webFetchTool = tool({
     try {
       const response = await fetch(url, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+          'User-Agent': USER_AGENT.FALLBACK
         }
       });
       
