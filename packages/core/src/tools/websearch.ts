@@ -1,7 +1,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import * as cheerio from 'cheerio';
-import { USER_AGENT } from '../constants/index.js';
+import { fetchWithRetry } from '../utils/index.js';
 
 export const webSearchTool = tool({
   description: 'Search the web using DuckDuckGo',
@@ -13,15 +13,7 @@ export const webSearchTool = tool({
     try {
       const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
       
-      const response = await fetch(searchUrl, {
-        headers: {
-          'User-Agent': USER_AGENT.DEFAULT
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
+      const response = await fetchWithRetry(searchUrl);
 
       const html = await response.text();
       const $ = cheerio.load(html);

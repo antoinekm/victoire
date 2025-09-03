@@ -1,7 +1,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import * as cheerio from 'cheerio';
-import { USER_AGENT } from '../constants/index.js';
+import { fetchWithRetry } from '../utils/index.js';
 
 export const webFetchTool = tool({
   description: 'Fetch and extract content from a web page',
@@ -12,15 +12,7 @@ export const webFetchTool = tool({
   }),
   execute: async ({ url, extractText, extractLinks }) => {
     try {
-      const response = await fetch(url, {
-        headers: {
-          'User-Agent': USER_AGENT.FALLBACK
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status} - ${response.statusText}`);
-      }
+      const response = await fetchWithRetry(url);
 
       const html = await response.text();
       const $ = cheerio.load(html);
