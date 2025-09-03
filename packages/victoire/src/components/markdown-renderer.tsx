@@ -19,14 +19,14 @@ export function MarkdownRenderer({ children }: MarkdownRendererProps) {
       
       if (line.startsWith('# ')) {
         elements.push(
-          <Box key={i} marginY={1}>
+          <Box key={i} marginTop={1}>
             <Text bold color="cyan">{line.slice(2)}</Text>
           </Box>
         );
       }
       else if (line.startsWith('## ')) {
         elements.push(
-          <Box key={i} marginY={1}>
+          <Box key={i} marginTop={1}>
             <Text bold color="blue">{line.slice(3)}</Text>
           </Box>
         );
@@ -54,7 +54,7 @@ export function MarkdownRenderer({ children }: MarkdownRendererProps) {
           i++;
         }
         elements.push(
-          <Box key={i} marginY={1} paddingX={2} borderStyle="single" borderColor="gray">
+          <Box key={i} marginTop={1} paddingX={2} borderStyle="single" borderColor="gray">
             <Box flexDirection="column">
               {codeLines.map((codeLine, j) => (
                 <Text key={j} color="green">{codeLine}</Text>
@@ -65,7 +65,7 @@ export function MarkdownRenderer({ children }: MarkdownRendererProps) {
       }
       else if (line.trim()) {
         elements.push(
-          <Box key={i} marginY={0}>
+          <Box key={i} marginTop={0}>
             <Text>{parseInlineMarkdown(line)}</Text>
           </Box>
         );
