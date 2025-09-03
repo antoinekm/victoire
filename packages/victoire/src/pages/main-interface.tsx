@@ -6,7 +6,7 @@ import { stepCountIs, ModelMessage } from 'ai';
 import { createLanguageModel } from '../services/ai-models.js';
 import { loadSettings } from '../services/settings.js';
 import { VERSION } from '../utils/version.js';
-import { terminalFormattingPrompt } from '../prompts/index.js';
+import { MarkdownRenderer } from '../components/markdown-renderer.js';
 
 interface MainInterfaceProps {
   cwd: string;
@@ -110,7 +110,7 @@ export function MainInterface({ cwd }: MainInterfaceProps) {
       
       const result = await agent.generateText({
         prompt: conversationContext,
-        system: agent.systemPrompt + terminalFormattingPrompt,
+        system: agent.systemPrompt,
         stopWhen: [stepCountIs(10)],
         onStepFinish: (step) => {
           for (const content of step.content) {
@@ -219,10 +219,17 @@ export function MainInterface({ cwd }: MainInterfaceProps) {
                 );
               }
               
-              return (
-                <Text color={msg.role === 'user' ? 'gray' : 'white'}>
-                  {msg.role === 'user' ? '> ' : '⏺ '}{content}
+              return msg.role === 'user' ? (
+                <Text color="gray">
+                  {'> '}{content}
                 </Text>
+              ) : (
+                <Box flexDirection="row">
+                  <Text color="white">⏺</Text>
+                  <Box>
+                    <MarkdownRenderer>{content}</MarkdownRenderer>
+                  </Box>
+                </Box>
               );
             })() : null}
           </Box>
