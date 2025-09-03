@@ -3,7 +3,6 @@ import { Box, Text, useInput } from 'ink';
 import TextInput from 'ink-text-input';
 import { victoire } from '@victoire.run/core';
 import { stepCountIs, ModelMessage } from 'ai';
-import type { StepResult, ToolSet } from 'ai';
 import { createLanguageModel } from '../services/ai-models.js';
 import { loadSettings } from '../services/settings.js';
 import { VERSION } from '../utils/version.js';
@@ -113,7 +112,7 @@ export function MainInterface({ cwd }: MainInterfaceProps) {
         prompt: conversationContext,
         system: agent.systemPrompt + terminalFormattingPrompt,
         stopWhen: [stepCountIs(10)],
-        onStepFinish: (step: StepResult<ToolSet>) => {
+        onStepFinish: (step) => {
           for (const content of step.content) {
             if (content.type === 'tool-call') {
               const stepMessage: StepMessage = {
